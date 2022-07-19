@@ -1,13 +1,12 @@
-<a href="https://github.com/kekkoga">
+<a href="https://github.com/kerraform">
     <img src="https://avatars.githubusercontent.com/u/82173916?s=200&v=4" alt="Kerraform logo" title="Terraform" align="right" height="80" />
 </a>
 
 # Kegistry: Terraform Registry
 
-![Test](https://github.com/kerraform/kegistry/workflows/Test/badge.svg)
-![Release](https://github.com/kerraform/kegistry/workflows/Release/badge.svg)
+![Test](https://github.com/kerraform/kegistry/workflows/CI/badge.svg)
 
-> Terraform Registry for personal usage
+> Terraform Registry fulfills Terraform provider and module API
 
 [![Renovate Badge][Renovate Icon]][Renovate]
 [![GoDoc Badge][GoDoc Icon]][GoDoc]
@@ -19,10 +18,10 @@
 
 These are the list of the supported features.
 
-* Private Terraform Registry
+* Audit logs
 * Storage
     * Local disk
-    * Google Cloud Storage
+    * S3 (or S3 compatible object storage)
 
 ## Configuration
 
@@ -31,8 +30,10 @@ Theses are environment variable list that you can configure.
 | Variable  | Description | Type| Default | 
 |:----:|:----:|:----:|:---:|
 | `PORT`  | Port to listen | `int` | `8888` | 
-| `DRIVER` | Storage driver to use (supports `local` and `gcs`) | `string` | `local` |
-| `GCS_BUCKET` | Bucket to store the blobs and the tags | `string` |  - (Required if`DRIVER` is `gcs`) |
+| `BACKEND_TYPE` | Storage driver to use (supports `local` and `s3`) | `string` | (required) |
+| `BACKEND_S3_BUCKET` | Bucket to store the blobs and the tags | `string` |  - (Required if `BACKEND_TYPE` is `s3`) |
+| `LOG_FORMAT` | Format of the logs (supports `json`, `console`, `color`) | `json` | 
+| `LOG_LEVEL` | Level of the logs (supports `info`, `debug`, `warn`, `error`) | `info` |
 
 Note that you need to create a GCS bucket before running this server with `gcs` driver otherwise the server will fail to init.
 
