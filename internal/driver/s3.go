@@ -27,3 +27,23 @@ func newS3Driver(logger *zap.Logger, opts *S3Opts) (Driver, error) {
 		secretKey: opts.SecretKey,
 	}, nil
 }
+
+func (s3 *S3) CreateProvider(namespace, registryName string) error {
+	return nil
+}
+
+func (s3 *S3) CreateProviderPlatform(namespace, registryName string) error {
+	return nil
+}
+
+func (s3 *S3) CreateProviderVersion(namespace, registryName, version string) error {
+	return nil
+}
+
+func (s3 *S3) IsProviderCreated(namespace, registryName string) error {
+	return nil
+}
+
+func (s3 *S3) IsProviderVersionCreated(namespace, registryName, version string) error {
+	return nil
+}

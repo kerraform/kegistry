@@ -56,7 +56,7 @@ func run(args []string) error {
 
 	var opts []driver.DriverOpt
 
-	switch driver.Driver(cfg.Backend.Type) {
+	switch driver.DriverType(cfg.Backend.Type) {
 	case driver.DriverTypeS3:
 		opts = append(opts, driver.WithS3(&driver.S3Opts{
 			AccessKey: cfg.Backend.S3.AccessKey,
@@ -64,7 +64,7 @@ func run(args []string) error {
 		}))
 	}
 
-	driver, err := driver.NewDriver(driver.DriverType(cfg.Backend.Type), logger, opts...)
+	driver, err := driver.NewDriver(driver.DriverType(cfg.Backend.Type), logger.Named("driver"), opts...)
 	if err != nil {
 		return err
 	}

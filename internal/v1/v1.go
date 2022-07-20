@@ -18,12 +18,12 @@ type HandlerConfig struct {
 func New(cfg *HandlerConfig) *Handler {
 	module := newModule(&moduleConfig{
 		Driver: cfg.Driver,
-		Logger: cfg.Logger,
+		Logger: cfg.Logger.Named("module"),
 	})
 
 	provider := newProvider(&providerConfig{
 		Driver: cfg.Driver,
-		Logger: cfg.Logger,
+		Logger: cfg.Logger.Named("provider"),
 	})
 
 	return &Handler{

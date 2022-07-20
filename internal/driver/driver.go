@@ -6,6 +6,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	moduleRootPath   = "modules"
+	providerRootPath = "providers"
+)
+
 type DriverType string
 
 const (
@@ -14,6 +19,10 @@ const (
 )
 
 type Driver interface {
+	CreateProvider(namespace, registryName string) error
+	CreateProviderVersion(namespace, registryName, version string) error
+	IsProviderCreated(namespace, registryName string) error
+	IsProviderVersionCreated(namespace, registryName, version string) error
 }
 
 type driverOpts struct {
