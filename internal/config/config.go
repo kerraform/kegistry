@@ -25,6 +25,7 @@ type BackendS3 struct {
 }
 
 type Config struct {
+	BaseURL string   `env:"BASE_URL,required"`
 	Backend *Backend `env:",prefix=BACKEND_"`
 	Port    int      `env:"PORT,default=5000"`
 	Log     *Log     `env:",prefix=LOG_"`

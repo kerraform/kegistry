@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +13,7 @@ import (
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/logging"
 	"github.com/kerraform/kegistry/internal/server"
+	v1 "github.com/kerraform/kegistry/internal/v1"
 	"github.com/kerraform/kegistry/internal/version"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -69,7 +71,22 @@ func run(args []string) error {
 
 	wg, ctx := errgroup.WithContext(ctx)
 
-	svr := server.NewServer(driver, logger)
+	baseURL, err := url.Parse(cfg.BaseURL)
+	if err != nil {
+		return err
+	}
+
+	v1 := v1.New(&v1.HandlerConfig{
+		Driver: driver,
+		Logger: logger,
+	})
+
+	svr := server.NewServer(&server.ServerConfig{
+		BaseURL: baseURL,
+		Driver:  driver,
+		Logger:  logger,
+		V1:      v1,
+	})
 
 	conn, err := net.Listen("tcp", cfg.Address())
 	if err != nil {

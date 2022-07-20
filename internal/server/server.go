@@ -4,27 +4,42 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/middleware"
+	v1 "github.com/kerraform/kegistry/internal/v1"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
 type Server struct {
-	driver driver.Driver
-	logger *zap.Logger
-	mux    *mux.Router
-	server *http.Server
+	baseURL *url.URL
+	driver  driver.Driver
+	logger  *zap.Logger
+	mux     *mux.Router
+	server  *http.Server
+
+	v1 *v1.Handler
 }
 
-func NewServer(driver driver.Driver, logger *zap.Logger) *Server {
+type ServerConfig struct {
+	BaseURL *url.URL
+	Driver  driver.Driver
+	Logger  *zap.Logger
+
+	V1 *v1.Handler
+}
+
+func NewServer(cfg *ServerConfig) *Server {
 	s := &Server{
-		driver: driver,
-		logger: logger,
-		mux:    mux.NewRouter(),
+		baseURL: cfg.BaseURL,
+		driver:  cfg.Driver,
+		logger:  cfg.Logger,
+		mux:     mux.NewRouter(),
+		v1:      cfg.V1,
 	}
 
 	s.registerRegistryHandler()

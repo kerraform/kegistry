@@ -2,6 +2,8 @@ package server
 
 import (
 	"net/http"
+
+	"github.com/kerraform/kegistry/internal/handler"
 )
 
 func (s *Server) registerUtilHandler() {
@@ -9,7 +11,7 @@ func (s *Server) registerUtilHandler() {
 }
 
 func (s *Server) HealthCheck() http.Handler {
-	return handler(s.logger, func(w http.ResponseWriter, _ *http.Request) error {
+	return handler.NewHandler(s.logger, func(w http.ResponseWriter, _ *http.Request) error {
 		w.WriteHeader(http.StatusOK)
 		return nil
 	})

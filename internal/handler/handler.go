@@ -1,4 +1,4 @@
-package server
+package handler
 
 import (
 	"net/http"
@@ -24,7 +24,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.logger.Error("error handling request", zap.Error(err))
 }
 
-func handler(logger *zap.Logger, f HandlerFunc) http.Handler {
+func NewHandler(logger *zap.Logger, f HandlerFunc) http.Handler {
 	return &Handler{
 		logger:     logger,
 		HandleFunc: f,

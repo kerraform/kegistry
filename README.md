@@ -6,7 +6,7 @@
 
 ![Test](https://github.com/kerraform/kegistry/workflows/CI/badge.svg)
 
-> Terraform Registry fulfills Terraform provider and module API
+> Terraform Registry fulfills Terraform provider and module registry protocol
 
 [![Renovate Badge][Renovate Icon]][Renovate]
 [![GoDoc Badge][GoDoc Icon]][GoDoc]
@@ -18,6 +18,8 @@
 
 These are the list of the supported features.
 
+* [Module Registry Protocol](https://www.terraform.io/internals/module-registry-protocol)
+* [Provider Registry Protocol](https://www.terraform.io/internals/provider-registry-protocol)
 * Audit logs
 * Storage
     * Local disk
