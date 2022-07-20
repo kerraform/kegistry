@@ -20,6 +20,7 @@ const (
 
 type Driver interface {
 	CreateProvider(namespace, registryName string) error
+	CreateProviderPlatform(namespace, registryName, version, osName, arch, filename string) error
 	CreateProviderVersion(namespace, registryName, version string) error
 	IsProviderCreated(namespace, registryName string) error
 	IsProviderVersionCreated(namespace, registryName, version string) error

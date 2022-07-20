@@ -32,7 +32,7 @@ func (s3 *S3) CreateProvider(namespace, registryName string) error {
 	return nil
 }
 
-func (s3 *S3) CreateProviderPlatform(namespace, registryName string) error {
+func (s3 *S3) CreateProviderPlatform(namespace, registryName, version, osName, arch, filename string) error {
 	return nil
 }
 

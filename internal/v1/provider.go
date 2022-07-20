@@ -38,21 +38,6 @@ func newProvider(cfg *providerConfig) Provider {
 	}
 }
 
-type ListAvailableVersionsResponse struct {
-	Versions []AvailableVersion `json:"versions"`
-}
-
-type AvailableVersion struct {
-	Version   string                     `json:"version"`
-	Protocols []string                   `json:"protocols"`
-	Platforms []AvailableVersionPlatform `json:"platforms"`
-}
-
-type AvailableVersionPlatform struct {
-	OS   string `json:"os"`
-	Arch string `json:"arch"`
-}
-
 //
 // https://www.terraform.io/cloud-docs/api-docs/private-registry/providers#request-body
 type CreateProviderRequest struct {
@@ -91,8 +76,69 @@ func (p *provider) CreateProvider() http.Handler {
 	})
 }
 
+type CreateProviderPlatformRequest struct {
+	Data *CreateProviderPlatformRequestData `json:"data"`
+}
+
+type CreateProviderPlatformRequestData struct {
+	Type       string                                       `json:"type"`
+	Attributes *CreateProviderPlatformRequestDataAttributes `json:"attributes"`
+}
+
+type CreateProviderPlatformRequestDataAttributes struct {
+	OS       string `json:"os"`
+	Arch     string `json:"arch"`
+	SHASum   string `json:"shasum"`
+	Filename string `json:"filename"`
+}
+
 func (p *provider) CreateProviderPlatform() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+		version := mux.Vars(r)["version"]
+
+		l := p.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("registryName", registryName),
+			zap.String("version", version),
+		)
+
+		if err := p.driver.IsProviderCreated(namespace, registryName); err != nil {
+			if errors.Is(err, driver.ErrProviderNotExist) {
+				l.Error("not provider found")
+				w.WriteHeader(http.StatusBadRequest)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		if err := p.driver.IsProviderVersionCreated(namespace, registryName, version); err != nil {
+			if errors.Is(err, driver.ErrProviderNotExist) {
+				l.Error("not provider version found")
+				w.WriteHeader(http.StatusBadRequest)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		var req CreateProviderPlatformRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+
+		if err := p.driver.CreateProviderPlatform(namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch, req.Data.Attributes.Filename); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		l.Info("created provider platform")
 		w.WriteHeader(http.StatusOK)
 		return nil
 	})
@@ -160,9 +206,33 @@ func (p *provider) FindPackage() http.Handler {
 	})
 }
 
+type ListAvailableVersionsResponse struct {
+	Versions []AvailableVersion `json:"versions"`
+}
+
+type AvailableVersion struct {
+	Version   string                     `json:"version"`
+	Protocols []string                   `json:"protocols"`
+	Platforms []AvailableVersionPlatform `json:"platforms"`
+}
+
+type AvailableVersionPlatform struct {
+	OS   string `json:"os"`
+	Arch string `json:"arch"`
+}
+
 func (p *provider) ListAvailableVersions() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, _ *http.Request) error {
+	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+
+		versions := []AvailableVersion{}
+
+		resp := &ListAvailableVersionsResponse{
+			Versions: versions,
+		}
+
 		w.WriteHeader(http.StatusOK)
-		return nil
+		return json.NewEncoder(w).Encode(resp)
 	})
 }

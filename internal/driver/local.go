@@ -38,12 +38,12 @@ func (l *local) CreateProvider(namespace, registryName string) error {
 	return nil
 }
 
-func (l *local) CreateProviderPlatform(namespace, registryName, version string) error {
-	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
-	if err := os.MkdirAll(version, 0700); err != nil {
+func (l *local) CreateProviderPlatform(namespace, registryName, version, osName, arch, filename string) error {
+	packageRootDir := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, osName, arch)
+	if err := os.MkdirAll(packageRootDir, 0700); err != nil {
 		return err
 	}
-	l.logger.Debug("created version path", zap.String("path", versionRootPath))
+	l.logger.Debug("created version path", zap.String("path", packageRootDir))
 	return nil
 }
 
