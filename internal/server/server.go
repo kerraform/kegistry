@@ -26,20 +26,18 @@ type Server struct {
 }
 
 type ServerConfig struct {
-	BaseURL *url.URL
-	Driver  driver.Driver
-	Logger  *zap.Logger
+	Driver driver.Driver
+	Logger *zap.Logger
 
 	V1 *v1.Handler
 }
 
 func NewServer(cfg *ServerConfig) *Server {
 	s := &Server{
-		baseURL: cfg.BaseURL,
-		driver:  cfg.Driver,
-		logger:  cfg.Logger,
-		mux:     mux.NewRouter(),
-		v1:      cfg.V1,
+		driver: cfg.Driver,
+		logger: cfg.Logger,
+		mux:    mux.NewRouter(),
+		v1:     cfg.V1,
 	}
 
 	s.registerRegistryHandler()

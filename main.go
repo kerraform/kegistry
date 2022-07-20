@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -71,21 +70,15 @@ func run(args []string) error {
 
 	wg, ctx := errgroup.WithContext(ctx)
 
-	baseURL, err := url.Parse(cfg.BaseURL)
-	if err != nil {
-		return err
-	}
-
 	v1 := v1.New(&v1.HandlerConfig{
 		Driver: driver,
 		Logger: logger,
 	})
 
 	svr := server.NewServer(&server.ServerConfig{
-		BaseURL: baseURL,
-		Driver:  driver,
-		Logger:  logger,
-		V1:      v1,
+		Driver: driver,
+		Logger: logger,
+		V1:     v1,
 	})
 
 	conn, err := net.Listen("tcp", cfg.Address())

@@ -3,6 +3,7 @@ package driver
 import (
 	"fmt"
 
+	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
 )
 
@@ -40,10 +41,18 @@ func (s3 *S3) CreateProviderVersion(namespace, registryName, version string) err
 	return nil
 }
 
+func (s3 *S3) FindPackage(namespace, registryName, version, os, arch string) (*model.Package, error) {
+	return nil, nil
+}
+
 func (s3 *S3) IsProviderCreated(namespace, registryName string) error {
 	return nil
 }
 
 func (s3 *S3) IsProviderVersionCreated(namespace, registryName, version string) error {
 	return nil
+}
+
+func (s3 *S3) ListAvailableVersions(namespace, registryName string) ([]model.AvailableVersion, error) {
+	return []model.AvailableVersion{}, nil
 }

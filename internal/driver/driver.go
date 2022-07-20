@@ -3,6 +3,7 @@ package driver
 import (
 	"fmt"
 
+	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
 )
 
@@ -24,6 +25,8 @@ type Driver interface {
 	CreateProviderVersion(namespace, registryName, version string) error
 	IsProviderCreated(namespace, registryName string) error
 	IsProviderVersionCreated(namespace, registryName, version string) error
+	ListAvailableVersions(namespace, registryName string) ([]model.AvailableVersion, error)
+	FindPackage(namespace, registryName, version, os, arch string) (*model.Package, error)
 }
 
 type driverOpts struct {
