@@ -1,11 +1,18 @@
 package driver
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
+	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/openpgp/packet"
+)
+
+var (
+	ErrProviderNotExist        = errors.New("provider not exist")
+	ErrProviderVersionNotExist = errors.New("provider version not exist")
 )
 
 const (
@@ -22,8 +29,8 @@ const (
 
 type Driver interface {
 	CreateProvider(namespace, registryName string) error
-	CreateProviderVersion(namespace, registryName, version string) error
 	CreateProviderPlatform(namespace, registryName, version, os, arch string) error
+	CreateProviderVersion(namespace, registryName, version string) error
 	IsProviderCreated(namespace, registryName string) error
 	IsProviderVersionCreated(namespace, registryName, version string) error
 	SaveGPGKey(namespace string, key *packet.PublicKey) error
@@ -31,6 +38,8 @@ type Driver interface {
 	SaveSHASUMs(namespace, registryName, version string, body io.Reader) error
 	SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error
 	SaveVersionMetadata(namespace, registryName, version, keyID string) error
+	ListAvailableVersions(namespace, registryName string) ([]model.AvailableVersion, error)
+	FindPackage(namespace, registryName, version, os, arch string) (*model.Package, error)
 }
 
 type driverOpts struct {

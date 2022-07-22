@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/openpgp/packet"
 )
@@ -34,12 +35,16 @@ func (s3 *S3) CreateProvider(namespace, registryName string) error {
 	return nil
 }
 
-func (s3 *S3) CreateProviderPlatform(namespace, registryName, version, pos, arch string) error {
+func (s3 *S3) CreateProviderPlatform(namespace, registryName, version, osName, arch string) error {
 	return nil
 }
 
 func (s3 *S3) CreateProviderVersion(namespace, registryName, version string) error {
 	return nil
+}
+
+func (s3 *S3) FindPackage(namespace, registryName, version, os, arch string) (*model.Package, error) {
+	return nil, nil
 }
 
 func (s3 *S3) IsProviderCreated(namespace, registryName string) error {
@@ -68,4 +73,8 @@ func (s3 *S3) SaveSHASUMsSig(namespace, registryName, version string, body io.Re
 
 func (s3 *S3) SaveVersionMetadata(namespace, registryName, version, keyID string) error {
 	return nil
+}
+
+func (s3 *S3) ListAvailableVersions(namespace, registryName string) ([]model.AvailableVersion, error) {
+	return []model.AvailableVersion{}, nil
 }

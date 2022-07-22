@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
+	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
 )
 
@@ -47,21 +48,6 @@ func newProvider(cfg *providerConfig) Provider {
 		driver: cfg.Driver,
 		logger: cfg.Logger,
 	}
-}
-
-type ListAvailableVersionsResponse struct {
-	Versions []AvailableVersion `json:"versions"`
-}
-
-type AvailableVersion struct {
-	Version   string                     `json:"version"`
-	Protocols []string                   `json:"protocols"`
-	Platforms []AvailableVersionPlatform `json:"platforms"`
-}
-
-type AvailableVersionPlatform struct {
-	OS   string `json:"os"`
-	Arch string `json:"arch"`
 }
 
 //
@@ -258,16 +244,79 @@ func (p *provider) CreateProviderVersion() http.Handler {
 }
 
 func (p *provider) FindPackage() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, _ *http.Request) error {
+	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+		version := mux.Vars(r)["version"]
+		os := mux.Vars(r)["os"]
+		arch := mux.Vars(r)["arch"]
+
+		l := p.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("registryName", registryName),
+			zap.String("version", version),
+			zap.String("os", os),
+			zap.String("arch", arch),
+		)
+
+		if err := p.driver.IsProviderCreated(namespace, registryName); err != nil {
+			if errors.Is(err, driver.ErrProviderNotExist) {
+				l.Error("not provider found")
+				w.WriteHeader(http.StatusBadRequest)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		if err := p.driver.IsProviderVersionCreated(namespace, registryName, version); err != nil {
+			if errors.Is(err, driver.ErrProviderNotExist) {
+				l.Error("not provider version found")
+				w.WriteHeader(http.StatusBadRequest)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		pkg, err := p.driver.FindPackage(namespace, registryName, version, os, arch)
+		if err != nil {
+			return err
+		}
+
 		w.WriteHeader(http.StatusOK)
-		return nil
+		return json.NewEncoder(w).Encode(pkg)
 	})
 }
 
+type ListAvailableVersionsResponse struct {
+	Versions []model.AvailableVersion `json:"versions"`
+}
+
+type AvailableVersion struct {
+	Version   string                           `json:"version"`
+	Protocols []string                         `json:"protocols"`
+	Platforms []model.AvailableVersionPlatform `json:"platforms"`
+}
+
 func (p *provider) ListAvailableVersions() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, _ *http.Request) error {
+	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+
+		versions, err := p.driver.ListAvailableVersions(namespace, registryName)
+		if err != nil {
+			return err
+		}
+
+		resp := &ListAvailableVersionsResponse{
+			Versions: versions,
+		}
+
 		w.WriteHeader(http.StatusOK)
-		return nil
+		return json.NewEncoder(w).Encode(resp)
 	})
 }
 

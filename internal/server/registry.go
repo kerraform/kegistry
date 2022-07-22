@@ -36,7 +36,7 @@ func (s *Server) registerRegistryHandler() {
 	// Creates a provider
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/providers#create-a-provider
-	s.mux.Methods(http.MethodPost).Path(fmt.Sprintf("%s", v1ProviderPath)).Handler(s.v1.Provider.CreateProvider())
+	s.mux.Methods(http.MethodPost).Path(v1ProviderPath).Handler(s.v1.Provider.CreateProvider())
 
 	// Creates a provider version
 	// Inspired by Terraform Cloud API:
