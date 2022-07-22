@@ -47,3 +47,7 @@ func (s3 *S3) IsProviderCreated(namespace, registryName string) error {
 func (s3 *S3) IsProviderVersionCreated(namespace, registryName, version string) error {
 	return nil
 }
+
+func (s3 *S3) SaveGPGKey(namespace, key string) error {
+	return nil
+}

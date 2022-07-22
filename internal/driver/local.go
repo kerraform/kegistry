@@ -14,7 +14,8 @@ var (
 )
 
 const (
-	localRootPath = "/tmp"
+	gpgKeyFilename = "gpg.key"
+	localRootPath  = "/tmp"
 )
 
 type local struct {
@@ -85,5 +86,24 @@ func (l *local) IsProviderVersionCreated(namespace, registryName, version string
 }
 
 func (l *local) ListVersions(namespace, provider string) error {
+	return nil
+}
+
+func (local *local) SaveGPGKey(namespace, key string) error {
+	keyRootPath := fmt.Sprintf("%s/%s/%s", localRootPath, providerRootPath, namespace)
+	if err := os.MkdirAll(keyRootPath, 0700); err != nil {
+		return err
+	}
+
+	keyPath := fmt.Sprintf("%s/%s", keyRootPath, gpgKeyFilename)
+	f, err := os.Create(keyPath)
+	if err != nil {
+		return err
+	}
+
+	if _, err := f.Write([]byte(key)); err != nil {
+		return err
+	}
+
 	return nil
 }

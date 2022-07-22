@@ -21,6 +21,7 @@ const (
 type Driver interface {
 	CreateProvider(namespace, registryName string) error
 	CreateProviderVersion(namespace, registryName, version string) error
+	SaveGPGKey(namespace, key string) error
 	IsProviderCreated(namespace, registryName string) error
 	IsProviderVersionCreated(namespace, registryName, version string) error
 }

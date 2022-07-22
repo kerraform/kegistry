@@ -51,6 +51,10 @@ func (s *Server) registerRegistryHandler() {
 	// Find a Provider Package
 	// https://www.terraform.io/internals/provider-registry-protocol#find-a-provider-package
 	s.mux.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{registryName}/{version}/download/{os}/{arch}", v1ProviderPath)).Handler(s.v1.Provider.FindPackage())
+
+	// Add GPG Key
+	// https://www.terraform.io/cloud-docs/api-docs/private-registry/gpg-keys#add-a-gpg-key
+	s.mux.Methods(http.MethodPost).Path("/v1/gpg-key").Handler(s.v1.AddGPGKey())
 }
 
 type GetServiceDiscoveryResponse struct {
