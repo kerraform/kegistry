@@ -30,6 +30,7 @@ type Driver interface {
 	SavePlatformBinary(namespace, registryName, version, os, arch string, body io.Reader) error
 	SaveSHASUMs(namespace, registryName, version string, body io.Reader) error
 	SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error
+	SaveVersionMetadata(namespace, registryName, version, keyID string) error
 }
 
 type driverOpts struct {
@@ -37,6 +38,10 @@ type driverOpts struct {
 }
 
 type DriverOpt func(opts *driverOpts)
+
+type ProviderVersionMetadata struct {
+	KeyID string `json:"key-id"`
+}
 
 func WithS3(s3Opts *S3Opts) DriverOpt {
 	return func(opts *driverOpts) {

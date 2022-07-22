@@ -182,6 +182,9 @@ type CreateProviderVersionRequestData struct {
 type CreateProviderVersionRequestDataAttributes struct {
 	// Version of the provider in semver (e.g. v2.0.1)
 	Version string `json:"version"`
+
+	// Valid gpg-key string
+	KeyID string `json:"key-id"`
 }
 
 type CreateProviderVersionResponse struct {
@@ -227,6 +230,12 @@ func (p *provider) CreateProviderVersion() http.Handler {
 
 		if err := p.driver.CreateProviderVersion(namespace, registryName, req.Data.Attributes.Version); err != nil {
 			l.Error("failed to create provider version")
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		if err := p.driver.SaveVersionMetadata(namespace, registryName, req.Data.Attributes.Version, req.Data.Attributes.KeyID); err != nil {
+			l.Error("failed to save provider version metadata")
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}

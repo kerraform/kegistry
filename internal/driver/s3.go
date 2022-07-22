@@ -65,3 +65,7 @@ func (s3 *S3) SaveSHASUMs(namespace, registryName, version string, body io.Reade
 func (s3 *S3) SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error {
 	return nil
 }
+
+func (s3 *S3) SaveVersionMetadata(namespace, registryName, version, keyID string) error {
+	return nil
+}

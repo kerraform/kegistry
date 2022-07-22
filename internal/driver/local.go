@@ -1,6 +1,8 @@
 package driver
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -18,7 +20,8 @@ var (
 )
 
 const (
-	localRootPath = "/tmp"
+	localRootPath           = "/tmp"
+	versionMetadataFilename = "metadata.json"
 )
 
 type local struct {
@@ -171,5 +174,25 @@ func (l *local) SaveSHASUMsSig(namespace, registryName, version string, body io.
 	l.logger.Debug("save shasums signature",
 		zap.String("path", filepath),
 	)
+	return err
+}
+
+func (l *local) SaveVersionMetadata(namespace, registryName, version, keyID string) error {
+	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s", localRootPath, providerRootPath, namespace, registryName, version, versionMetadataFilename)
+	f, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+
+	b := new(bytes.Buffer)
+	metadata := &ProviderVersionMetadata{
+		KeyID: keyID,
+	}
+
+	if err := json.NewEncoder(b).Encode(metadata); err != nil {
+		return err
+	}
+
+	_, err = io.Copy(f, b)
 	return err
 }
