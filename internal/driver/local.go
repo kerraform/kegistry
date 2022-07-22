@@ -6,6 +6,9 @@ import (
 	"os"
 
 	"go.uber.org/zap"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
+	"golang.org/x/crypto/openpgp/packet"
 )
 
 var (
@@ -14,8 +17,7 @@ var (
 )
 
 const (
-	gpgKeyFilename = "gpg.key"
-	localRootPath  = "/tmp"
+	localRootPath = "/tmp"
 )
 
 type local struct {
@@ -89,21 +91,27 @@ func (l *local) ListVersions(namespace, provider string) error {
 	return nil
 }
 
-func (local *local) SaveGPGKey(namespace, key string) error {
+func (local *local) SaveGPGKey(namespace string, key *packet.PublicKey) error {
 	keyRootPath := fmt.Sprintf("%s/%s/%s", localRootPath, providerRootPath, namespace)
 	if err := os.MkdirAll(keyRootPath, 0700); err != nil {
 		return err
 	}
 
-	keyPath := fmt.Sprintf("%s/%s", keyRootPath, gpgKeyFilename)
+	keyPath := fmt.Sprintf("%s/%s", keyRootPath, key.KeyIdString())
 	f, err := os.Create(keyPath)
 	if err != nil {
 		return err
 	}
 
-	if _, err := f.Write([]byte(key)); err != nil {
+	w, err := armor.Encode(f, openpgp.PublicKeyType, make(map[string]string))
+	if err != nil {
 		return err
 	}
+
+	if err := key.Serialize(w); err != nil {
+		return err
+	}
+	defer w.Close()
 
 	return nil
 }

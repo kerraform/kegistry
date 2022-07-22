@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	"golang.org/x/crypto/openpgp/packet"
 )
 
 type S3 struct {
@@ -48,6 +49,6 @@ func (s3 *S3) IsProviderVersionCreated(namespace, registryName, version string) 
 	return nil
 }
 
-func (s3 *S3) SaveGPGKey(namespace, key string) error {
+func (s3 *S3) SaveGPGKey(namespace string, key *packet.PublicKey) error {
 	return nil
 }

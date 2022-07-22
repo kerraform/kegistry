@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,6 +9,9 @@ import (
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
+	"golang.org/x/crypto/openpgp/packet"
 )
 
 type Handler struct {
@@ -77,9 +81,39 @@ func (h *Handler) AddGPGKey() http.Handler {
 			return fmt.Errorf("invalid request")
 		}
 
-		if err := h.driver.SaveGPGKey(req.Data.Attributes.Namespace, req.Data.Attributes.ASCIIArmor); err != nil {
+		b := bytes.NewBufferString(req.Data.Attributes.ASCIIArmor)
+		block, err := armor.Decode(b)
+		if err != nil {
 			return err
 		}
+
+		if block.Type != openpgp.PublicKeyType {
+			w.WriteHeader(http.StatusBadRequest)
+			return fmt.Errorf("key is not public key")
+		}
+
+		reader := packet.NewReader(block.Body)
+		pkt, err := reader.Next()
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return err
+		}
+
+		key, ok := pkt.(*packet.PublicKey)
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return fmt.Errorf("failed to read public key")
+		}
+
+		l.Info("received public key",
+			zap.String("keyID", key.KeyIdString()),
+		)
+
+		if err := h.driver.SaveGPGKey(req.Data.Attributes.Namespace, key); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
 		l.Info("saved gpg key")
 		return nil
 	})
