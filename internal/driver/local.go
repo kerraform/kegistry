@@ -3,6 +3,7 @@ package driver
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"go.uber.org/zap"
@@ -114,4 +115,36 @@ func (local *local) SaveGPGKey(namespace string, key *packet.PublicKey) error {
 	defer w.Close()
 
 	return nil
+}
+
+func (l *local) SaveSHASUMs(namespace, registryName, version string, body io.Reader) error {
+	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
+	if err := l.IsProviderVersionCreated(namespace, registryName, version); err != nil {
+		return err
+	}
+
+	filename := fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(f, body)
+	return err
+}
+
+func (l *local) SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error {
+	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
+	if err := l.IsProviderVersionCreated(namespace, registryName, version); err != nil {
+		return err
+	}
+
+	filename := fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(f, body)
+	return err
 }

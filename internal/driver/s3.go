@@ -2,6 +2,7 @@ package driver
 
 import (
 	"fmt"
+	"io"
 
 	"go.uber.org/zap"
 	"golang.org/x/crypto/openpgp/packet"
@@ -50,5 +51,13 @@ func (s3 *S3) IsProviderVersionCreated(namespace, registryName, version string) 
 }
 
 func (s3 *S3) SaveGPGKey(namespace string, key *packet.PublicKey) error {
+	return nil
+}
+
+func (s3 *S3) SaveSHASUMs(namespace, registryName, version string, body io.Reader) error {
+	return nil
+}
+
+func (s3 *S3) SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error {
 	return nil
 }

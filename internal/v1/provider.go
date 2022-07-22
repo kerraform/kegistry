@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -11,12 +12,20 @@ import (
 	"go.uber.org/zap"
 )
 
+type DataType string
+
+const (
+	DataTypeRegistryProviderVersions DataType = "registry-provider-versions"
+)
+
 type Provider interface {
 	CreateProvider() http.Handler
 	CreateProviderPlatform() http.Handler
 	CreateProviderVersion() http.Handler
 	FindPackage() http.Handler
 	ListAvailableVersions() http.Handler
+	UploadSHASums() http.Handler
+	UploadSHASumsSignature() http.Handler
 }
 
 type provider struct {
@@ -60,7 +69,7 @@ type CreateProviderRequest struct {
 }
 
 type CreateProviderRequestData struct {
-	Type       string                               `json:"type"`
+	Type       DataType                             `json:"type"`
 	Attributes *CreateProviderRequestDataAttributes `json:"attributes"`
 }
 
@@ -105,13 +114,27 @@ type CreateProviderVersionRequest struct {
 }
 
 type CreateProviderVersionRequestData struct {
-	Type       string                                      `json:"type"`
+	Type       DataType                                    `json:"type"`
 	Attributes *CreateProviderVersionRequestDataAttributes `json:"attributes"`
 }
 
 type CreateProviderVersionRequestDataAttributes struct {
 	// Version of the provider in semver (e.g. v2.0.1)
 	Version string `json:"version"`
+}
+
+type CreateProviderVersionResponse struct {
+	Data *CreateProviderVersionResponseData `json:"data"`
+}
+
+type CreateProviderVersionResponseData struct {
+	Type DataType                               `json:"type"`
+	Link *CreateProviderVersionResponseDataLink `json:"attributes"`
+}
+
+type CreateProviderVersionResponseDataLink struct {
+	SHASumsUpload    string `json:"shasums-upload"`
+	SHASumsSigUpload string `json:"shasums-sig-upload"`
 }
 
 func (p *provider) CreateProviderVersion() http.Handler {
@@ -149,7 +172,18 @@ func (p *provider) CreateProviderVersion() http.Handler {
 
 		l.Info("create provider version")
 		w.WriteHeader(http.StatusOK)
-		return nil
+
+		resp := &CreateProviderVersionResponse{
+			Data: &CreateProviderVersionResponseData{
+				Type: DataTypeRegistryProviderVersions,
+				Link: &CreateProviderVersionResponseDataLink{
+					SHASumsUpload:    fmt.Sprintf("/v1/%s/%s/versions/%s/sigsums", namespace, registryName, req.Data.Attributes.Version),
+					SHASumsSigUpload: fmt.Sprintf("/v1/%s/%s/versions/%s/shasums-sig", namespace, registryName, req.Data.Attributes.Version),
+				},
+			},
+		}
+
+		return json.NewEncoder(w).Encode(resp)
 	})
 }
 
@@ -163,6 +197,48 @@ func (p *provider) FindPackage() http.Handler {
 func (p *provider) ListAvailableVersions() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, _ *http.Request) error {
 		w.WriteHeader(http.StatusOK)
+		return nil
+	})
+}
+
+func (p *provider) UploadSHASums() http.Handler {
+	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+		version := mux.Vars(r)["version"]
+
+		l := p.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("registryName", registryName),
+		)
+
+		if err := p.driver.SaveSHASUMsSig(namespace, registryName, version, r.Body); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+
+		l.Info("saved shasums")
+		return nil
+	})
+}
+
+func (p *provider) UploadSHASumsSignature() http.Handler {
+	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+		version := mux.Vars(r)["version"]
+
+		l := p.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("registryName", registryName),
+		)
+
+		if err := p.driver.SaveSHASUMsSig(namespace, registryName, version, r.Body); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+
+		l.Info("saved shasums signature")
 		return nil
 	})
 }

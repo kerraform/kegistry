@@ -43,6 +43,16 @@ func (s *Server) registerRegistryHandler() {
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
 	s.mux.Methods(http.MethodPost).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions", v1ProviderPath)).Handler(s.v1.Provider.CreateProviderVersion())
 
+	// Creates a provider version shasums
+	// Inspired by Terraform Cloud API:
+	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
+	s.mux.Methods(http.MethodPost).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/shasums", v1ProviderPath)).Handler(s.v1.Provider.UploadSHASums())
+
+	// Creates a provider version shasums signature
+	// Inspired by Terraform Cloud API:
+	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
+	s.mux.Methods(http.MethodPost).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/shasums-sig", v1ProviderPath)).Handler(s.v1.Provider.UploadSHASumsSignature())
+
 	// Creates a provider platform
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-platform
@@ -69,7 +79,6 @@ func (s *Server) ServiceDiscovery() http.Handler {
 			ProviderV1: path.Join(s.baseURL.String(), v1ProviderPath),
 		}
 
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		return json.NewEncoder(w).Encode(resp)
 	})
 }

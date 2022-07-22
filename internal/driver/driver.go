@@ -2,6 +2,7 @@ package driver
 
 import (
 	"fmt"
+	"io"
 
 	"go.uber.org/zap"
 	"golang.org/x/crypto/openpgp/packet"
@@ -22,9 +23,11 @@ const (
 type Driver interface {
 	CreateProvider(namespace, registryName string) error
 	CreateProviderVersion(namespace, registryName, version string) error
-	SaveGPGKey(namespace string, key *packet.PublicKey) error
 	IsProviderCreated(namespace, registryName string) error
 	IsProviderVersionCreated(namespace, registryName, version string) error
+	SaveGPGKey(namespace string, key *packet.PublicKey) error
+	SaveSHASUMs(namespace, registryName, version string, body io.Reader) error
+	SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error
 }
 
 type driverOpts struct {

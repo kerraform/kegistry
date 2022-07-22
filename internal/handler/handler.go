@@ -16,6 +16,7 @@ type HandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
 // ServeHTTP Implements the http.Handler
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	err := h.HandleFunc(w, r)
 	if err == nil {
 		return
