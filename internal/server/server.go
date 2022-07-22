@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/kerraform/kegistry/internal/driver"
@@ -16,11 +15,10 @@ import (
 )
 
 type Server struct {
-	baseURL *url.URL
-	driver  driver.Driver
-	logger  *zap.Logger
-	mux     *mux.Router
-	server  *http.Server
+	driver driver.Driver
+	logger *zap.Logger
+	mux    *mux.Router
+	server *http.Server
 
 	v1 *v1.Handler
 }
