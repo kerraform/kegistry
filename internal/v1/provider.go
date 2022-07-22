@@ -177,8 +177,8 @@ func (p *provider) CreateProviderVersion() http.Handler {
 			Data: &CreateProviderVersionResponseData{
 				Type: DataTypeRegistryProviderVersions,
 				Link: &CreateProviderVersionResponseDataLink{
-					SHASumsUpload:    fmt.Sprintf("/v1/%s/%s/versions/%s/sigsums", namespace, registryName, req.Data.Attributes.Version),
-					SHASumsSigUpload: fmt.Sprintf("/v1/%s/%s/versions/%s/shasums-sig", namespace, registryName, req.Data.Attributes.Version),
+					SHASumsUpload:    fmt.Sprintf("/v1/providers/%s/%s/versions/%s/sigsums", namespace, registryName, req.Data.Attributes.Version),
+					SHASumsSigUpload: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, req.Data.Attributes.Version),
 				},
 			},
 		}
@@ -212,7 +212,7 @@ func (p *provider) UploadSHASums() http.Handler {
 			zap.String("registryName", registryName),
 		)
 
-		if err := p.driver.SaveSHASUMsSig(namespace, registryName, version, r.Body); err != nil {
+		if err := p.driver.SaveSHASUMs(namespace, registryName, version, r.Body); err != nil {
 			return err
 		}
 		defer r.Body.Close()

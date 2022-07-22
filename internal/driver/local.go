@@ -123,13 +123,16 @@ func (l *local) SaveSHASUMs(namespace, registryName, version string, body io.Rea
 		return err
 	}
 
-	filename := fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)
-	f, err := os.Create(filename)
+	filepath := fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)
+	f, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 
 	_, err = io.Copy(f, body)
+	l.logger.Debug("save shasums",
+		zap.String("path", filepath),
+	)
 	return err
 }
 
@@ -139,12 +142,15 @@ func (l *local) SaveSHASUMsSig(namespace, registryName, version string, body io.
 		return err
 	}
 
-	filename := fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)
-	f, err := os.Create(filename)
+	filepath := fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)
+	f, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 
 	_, err = io.Copy(f, body)
+	l.logger.Debug("save shasums signature",
+		zap.String("path", filepath),
+	)
 	return err
 }
