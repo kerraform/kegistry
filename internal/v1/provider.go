@@ -15,7 +15,8 @@ import (
 type DataType string
 
 const (
-	DataTypeRegistryProviderVersions DataType = "registry-provider-versions"
+	DataTypeRegistryProviderVersions  DataType = "registry-provider-versions"
+	DataTypeRegistryProviderPlatforms DataType = "registry-provider-platforms"
 )
 
 type Provider interface {
@@ -24,6 +25,7 @@ type Provider interface {
 	CreateProviderVersion() http.Handler
 	FindPackage() http.Handler
 	ListAvailableVersions() http.Handler
+	UploadPlatformBinary() http.Handler
 	UploadSHASums() http.Handler
 	UploadSHASumsSignature() http.Handler
 }
@@ -100,10 +102,69 @@ func (p *provider) CreateProvider() http.Handler {
 	})
 }
 
+type CreateProviderPlatformRequest struct {
+	Data *CreateProviderPlatformRequestData `json:"data"`
+}
+
+type CreateProviderPlatformRequestData struct {
+	Type       DataType                                     `json:"type"`
+	Attributes *CreateProviderPlatformRequestDataAttributes `json:"attributes"`
+}
+
+type CreateProviderPlatformRequestDataAttributes struct {
+	OS   string `json:"os"`
+	Arch string `json:"arch"`
+}
+
+type CreateProviderPlatformResponse struct {
+	Data *CreateProviderPlatformResponseData `json:"data"`
+}
+
+type CreateProviderPlatformResponseData struct {
+	Type  DataType                                `json:"type"`
+	Links *CreateProviderPlatformResponseDataLink `json:"attributes"`
+}
+
+type CreateProviderPlatformResponseDataLink struct {
+	ProviderBinaryUploads string `json:"provider-binary-upload"`
+}
+
 func (p *provider) CreateProviderPlatform() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
-		w.WriteHeader(http.StatusOK)
-		return nil
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+		version := mux.Vars(r)["version"]
+
+		var req CreateProviderPlatformRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return err
+		}
+
+		l := p.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("registryName", registryName),
+			zap.String("version", version),
+			zap.String("os", req.Data.Attributes.OS),
+			zap.String("arch", req.Data.Attributes.Arch),
+		)
+
+		if err := p.driver.CreateProviderPlatform(namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+
+		l.Info("provisioned provider platform")
+
+		resp := &CreateProviderPlatformResponse{
+			Data: &CreateProviderPlatformResponseData{
+				Type: DataTypeRegistryProviderPlatforms,
+				Links: &CreateProviderPlatformResponseDataLink{
+					ProviderBinaryUploads: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/%s/%s/binary", namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch),
+				},
+			},
+		}
+		return json.NewEncoder(w).Encode(resp)
 	})
 }
 
@@ -128,8 +189,8 @@ type CreateProviderVersionResponse struct {
 }
 
 type CreateProviderVersionResponseData struct {
-	Type DataType                               `json:"type"`
-	Link *CreateProviderVersionResponseDataLink `json:"attributes"`
+	Type  DataType                               `json:"type"`
+	Links *CreateProviderVersionResponseDataLink `json:"attributes"`
 }
 
 type CreateProviderVersionResponseDataLink struct {
@@ -176,7 +237,7 @@ func (p *provider) CreateProviderVersion() http.Handler {
 		resp := &CreateProviderVersionResponse{
 			Data: &CreateProviderVersionResponseData{
 				Type: DataTypeRegistryProviderVersions,
-				Link: &CreateProviderVersionResponseDataLink{
+				Links: &CreateProviderVersionResponseDataLink{
 					SHASumsUpload:    fmt.Sprintf("/v1/providers/%s/%s/versions/%s/sigsums", namespace, registryName, req.Data.Attributes.Version),
 					SHASumsSigUpload: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, req.Data.Attributes.Version),
 				},
@@ -201,6 +262,32 @@ func (p *provider) ListAvailableVersions() http.Handler {
 	})
 }
 
+func (p *provider) UploadPlatformBinary() http.Handler {
+	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+		version := mux.Vars(r)["version"]
+		os := mux.Vars(r)["os"]
+		arch := mux.Vars(r)["arch"]
+
+		l := p.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("registryName", registryName),
+			zap.String("version", version),
+			zap.String("os", os),
+			zap.String("arch", arch),
+		)
+
+		if err := p.driver.SavePlatformBinary(namespace, registryName, version, os, arch, r.Body); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+
+		l.Info("saved platform binary")
+		return nil
+	})
+}
+
 func (p *provider) UploadSHASums() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
@@ -210,6 +297,7 @@ func (p *provider) UploadSHASums() http.Handler {
 		l := p.logger.With(
 			zap.String("namespace", namespace),
 			zap.String("registryName", registryName),
+			zap.String("version", version),
 		)
 
 		if err := p.driver.SaveSHASUMs(namespace, registryName, version, r.Body); err != nil {
@@ -231,6 +319,7 @@ func (p *provider) UploadSHASumsSignature() http.Handler {
 		l := p.logger.With(
 			zap.String("namespace", namespace),
 			zap.String("registryName", registryName),
+			zap.String("version", version),
 		)
 
 		if err := p.driver.SaveSHASUMsSig(namespace, registryName, version, r.Body); err != nil {

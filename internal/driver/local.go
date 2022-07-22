@@ -42,12 +42,12 @@ func (l *local) CreateProvider(namespace, registryName string) error {
 	return nil
 }
 
-func (l *local) CreateProviderPlatform(namespace, registryName, version string) error {
-	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
-	if err := os.MkdirAll(version, 0700); err != nil {
+func (l *local) CreateProviderPlatform(namespace, registryName, version, pos, arch string) error {
+	platformRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
+	if err := os.MkdirAll(platformRootPath, 0700); err != nil {
 		return err
 	}
-	l.logger.Debug("created version path", zap.String("path", versionRootPath))
+	l.logger.Debug("created platform path", zap.String("path", platformRootPath))
 	return nil
 }
 
@@ -115,6 +115,25 @@ func (local *local) SaveGPGKey(namespace string, key *packet.PublicKey) error {
 	defer w.Close()
 
 	return nil
+}
+
+func (l *local) SavePlatformBinary(namespace, registryName, version, pos, arch string, body io.Reader) error {
+	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
+	if err := l.IsProviderVersionCreated(namespace, registryName, version); err != nil {
+		return err
+	}
+
+	filepath := fmt.Sprintf("%s/terraform-provider-%s_%s_%s_%s.zip", platformPath, registryName, version, pos, arch)
+	f, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(f, body)
+	l.logger.Debug("save platform binary",
+		zap.String("path", filepath),
+	)
+	return err
 }
 
 func (l *local) SaveSHASUMs(namespace, registryName, version string, body io.Reader) error {

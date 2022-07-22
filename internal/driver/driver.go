@@ -23,9 +23,11 @@ const (
 type Driver interface {
 	CreateProvider(namespace, registryName string) error
 	CreateProviderVersion(namespace, registryName, version string) error
+	CreateProviderPlatform(namespace, registryName, version, os, arch string) error
 	IsProviderCreated(namespace, registryName string) error
 	IsProviderVersionCreated(namespace, registryName, version string) error
 	SaveGPGKey(namespace string, key *packet.PublicKey) error
+	SavePlatformBinary(namespace, registryName, version, os, arch string, body io.Reader) error
 	SaveSHASUMs(namespace, registryName, version string, body io.Reader) error
 	SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error
 }

@@ -43,6 +43,11 @@ func (s *Server) registerRegistryHandler() {
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
 	s.mux.Methods(http.MethodPost).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions", v1ProviderPath)).Handler(s.v1.Provider.CreateProviderVersion())
 
+	// Creates a provider platform binary
+	// Inspired by Terraform Cloud API:
+	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
+	s.mux.Methods(http.MethodPut).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/{os}/{arch}/binary", v1ProviderPath)).Handler(s.v1.Provider.UploadPlatformBinary())
+
 	// Creates a provider version shasums
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
@@ -56,7 +61,7 @@ func (s *Server) registerRegistryHandler() {
 	// Creates a provider platform
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-platform
-	s.mux.Methods(http.MethodPost).Path(fmt.Sprintf("%s/{namespace}/{name}/versions/{version}/platforms", v1ProviderPath)).Handler(s.v1.Provider.CreateProviderPlatform())
+	s.mux.Methods(http.MethodPost).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/platforms", v1ProviderPath)).Handler(s.v1.Provider.CreateProviderPlatform())
 
 	// Find a Provider Package
 	// https://www.terraform.io/internals/provider-registry-protocol#find-a-provider-package

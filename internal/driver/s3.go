@@ -34,7 +34,7 @@ func (s3 *S3) CreateProvider(namespace, registryName string) error {
 	return nil
 }
 
-func (s3 *S3) CreateProviderPlatform(namespace, registryName string) error {
+func (s3 *S3) CreateProviderPlatform(namespace, registryName, version, pos, arch string) error {
 	return nil
 }
 
@@ -51,6 +51,10 @@ func (s3 *S3) IsProviderVersionCreated(namespace, registryName, version string) 
 }
 
 func (s3 *S3) SaveGPGKey(namespace string, key *packet.PublicKey) error {
+	return nil
+}
+
+func (s3 *S3) SavePlatformBinary(namespace, registryName, version, pos, arch string, body io.Reader) error {
 	return nil
 }
 
