@@ -61,8 +61,8 @@ type CreateProviderRequest struct {
 }
 
 type CreateProviderRequestData struct {
-	Type       DataType                             `json:"type"`
 	Attributes *CreateProviderRequestDataAttributes `json:"attributes"`
+	Type       DataType                             `json:"type"`
 }
 
 type CreateProviderRequestDataAttributes struct {
@@ -97,8 +97,8 @@ type CreateProviderPlatformRequest struct {
 }
 
 type CreateProviderPlatformRequestData struct {
-	Type       DataType                                     `json:"type"`
 	Attributes *CreateProviderPlatformRequestDataAttributes `json:"attributes"`
+	Type       DataType                                     `json:"type"`
 }
 
 type CreateProviderPlatformRequestDataAttributes struct {
@@ -111,8 +111,8 @@ type CreateProviderPlatformResponse struct {
 }
 
 type CreateProviderPlatformResponseData struct {
-	Type  DataType                                `json:"type"`
 	Links *CreateProviderPlatformResponseDataLink `json:"attributes"`
+	Type  DataType                                `json:"type"`
 }
 
 type CreateProviderPlatformResponseDataLink struct {
@@ -165,8 +165,8 @@ type CreateProviderVersionRequest struct {
 }
 
 type CreateProviderVersionRequestData struct {
-	Type       DataType                                    `json:"type"`
 	Attributes *CreateProviderVersionRequestDataAttributes `json:"attributes"`
+	Type       DataType                                    `json:"type"`
 }
 
 type CreateProviderVersionRequestDataAttributes struct {
@@ -182,8 +182,8 @@ type CreateProviderVersionResponse struct {
 }
 
 type CreateProviderVersionResponseData struct {
-	Type  DataType                               `json:"type"`
 	Links *CreateProviderVersionResponseDataLink `json:"attributes"`
+	Type  DataType                               `json:"type"`
 }
 
 type CreateProviderVersionResponseDataLink struct {

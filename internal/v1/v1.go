@@ -51,8 +51,8 @@ type AddGPGKeyRequest struct {
 }
 
 type AddGPGKeyRequestData struct {
-	Type       string                      `json:"type"`
 	Attributes *AddGPGKeyRequestAttributes `json:"attributes"`
+	Type       string                      `json:"type"`
 }
 
 type AddGPGKeyRequestAttributes struct {

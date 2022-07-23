@@ -9,8 +9,8 @@ import (
 )
 
 type Backend struct {
-	Type string     `env:"TYPE,required"`
 	S3   *BackendS3 `env:",prefix=S3_"`
+	Type string     `env:"TYPE,required"`
 }
 
 func (b *Backend) MarshalLogObject(enc zapcore.ObjectEncoder) error {
@@ -26,8 +26,8 @@ type BackendS3 struct {
 
 type Config struct {
 	Backend *Backend `env:",prefix=BACKEND_"`
-	Port    int      `env:"PORT,default=5000"`
 	Log     *Log     `env:",prefix=LOG_"`
+	Port    int      `env:"PORT,default=5000"`
 }
 
 func (cfg *Config) Address() string {
