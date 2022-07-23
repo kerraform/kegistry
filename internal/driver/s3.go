@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/openpgp/packet"
 )
 
 type S3 struct {
