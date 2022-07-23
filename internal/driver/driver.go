@@ -17,6 +17,7 @@ var (
 )
 
 const (
+	keyDirname       = "keys"
 	moduleRootPath   = "modules"
 	providerRootPath = "providers"
 )
@@ -32,6 +33,9 @@ type Driver interface {
 	CreateProvider(namespace, registryName string) error
 	CreateProviderPlatform(namespace, registryName, version, os, arch string) error
 	CreateProviderVersion(namespace, registryName, version string) error
+	GetPlatformBinary(namespace, registryName, version, os, arch string) error
+	GetSHASums(namespace, registryName, version string) error
+	GetSHASumsSig(namespace, registryName, version string) error
 	IsProviderCreated(namespace, registryName string) error
 	IsProviderVersionCreated(namespace, registryName, version string) error
 	SaveGPGKey(namespace string, key *packet.PublicKey) error

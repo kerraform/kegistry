@@ -63,6 +63,18 @@ func (l *local) CreateProviderVersion(namespace, registryName, version string) e
 	return nil
 }
 
+func (l *local) GetPlatformBinary(namespace, registryName, version, pos, arch string) error {
+	return nil
+}
+
+func (l *local) GetSHASums(namespace, registryName, version string) error {
+	return nil
+}
+
+func (l *local) GetSHASumsSig(namespace, registryName, version string) error {
+	return nil
+}
+
 func (l *local) FindPackage(namespace, registryName, version, pos, arch string) (*model.Package, error) {
 	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
 	filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", registryName, version, pos, arch)
@@ -86,6 +98,56 @@ func (l *local) FindPackage(namespace, registryName, version, pos, arch string) 
 	sha256Sum := hex.EncodeToString(sha256SumHex[:])
 	l.logger.Debug("generated sha256sum for file", zap.String("sha256sum", sha256Sum))
 
+	keysPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, registryName, version, keyDirname)
+	keys, err := ioutil.ReadDir(keysPath)
+	if err != nil {
+		return nil, err
+	}
+
+	gpgKeys := []model.GPGPublicKey{}
+	for _, key := range keys {
+		f, err := ioutil.ReadFile(key.Name())
+		if err != nil {
+			l.logger.Error("failed to read key file",
+				zap.String("file", key.Name()),
+			)
+
+			continue
+		}
+		b := bytes.NewBuffer(f)
+		block, err := armor.Decode(b)
+		if err != nil {
+			continue
+		}
+
+		if block.Type != openpgp.PublicKeyType {
+			continue
+		}
+
+		reader := packet.NewReader(block.Body)
+		pkt, err := reader.Next()
+		if err != nil {
+			continue
+		}
+
+		k, ok := pkt.(*packet.PublicKey)
+		if !ok {
+			continue
+		}
+
+		gpgKey := model.GPGPublicKey{
+			KeyID:      k.KeyIdString(),
+			ASCIIArmor: string(f),
+		}
+		gpgKeys = append(gpgKeys, gpgKey)
+	}
+
+	signingKeys := []model.SigningKeys{
+		{
+			GPGPublicKeys: gpgKeys,
+		},
+	}
+
 	pkg := &model.Package{
 		OS:            pos,
 		Arch:          arch,
@@ -94,6 +156,7 @@ func (l *local) FindPackage(namespace, registryName, version, pos, arch string) 
 		SHASumsURL:    fmt.Sprintf("v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
 		SHASumsSigURL: fmt.Sprintf("v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
 		SHASum:        sha256Sum,
+		SigningKeys:   signingKeys,
 	}
 
 	return pkg, nil
@@ -179,7 +242,7 @@ func (l *local) ListAvailableVersions(namespace, registryName string) ([]model.A
 }
 
 func (local *local) SaveGPGKey(namespace string, key *packet.PublicKey) error {
-	keyRootPath := fmt.Sprintf("%s/%s/%s", localRootPath, providerRootPath, namespace)
+	keyRootPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, keyDirname)
 	if err := os.MkdirAll(keyRootPath, 0700); err != nil {
 		return err
 	}

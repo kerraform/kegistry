@@ -46,16 +46,19 @@ func (s *Server) registerRegistryHandler() {
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
 	s.mux.Methods(http.MethodPut).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/{os}/{arch}/binary", v1ProvidersPath)).Handler(s.v1.Provider.UploadPlatformBinary())
+	s.mux.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/{os}/{arch}/binary", v1ProvidersPath)).Handler(s.v1.Provider.DownloadPlatformBinary())
 
-	// Creates a provider version shasums
+	// Creates and get a provider version shasums
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
 	s.mux.Methods(http.MethodPut).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/shasums", v1ProvidersPath)).Handler(s.v1.Provider.UploadSHASums())
+	s.mux.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/shasums", v1ProvidersPath)).Handler(s.v1.Provider.DownloadSHASums())
 
-	// Creates a provider version shasums signature
+	// Creates and get a provider version shasums signature
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
 	s.mux.Methods(http.MethodPut).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/shasums-sig", v1ProvidersPath)).Handler(s.v1.Provider.UploadSHASumsSignature())
+	s.mux.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/shasums-sig", v1ProvidersPath)).Handler(s.v1.Provider.DownloadSHASumsSignature())
 
 	// Creates a provider platform
 	// Inspired by Terraform Cloud API:
@@ -80,7 +83,7 @@ func (s *Server) ServiceDiscovery() http.Handler {
 	return handler.NewHandler(s.logger, func(w http.ResponseWriter, _ *http.Request) error {
 		resp := &GetServiceDiscoveryResponse{
 			ModulesV1:   fmt.Sprintf("%s/", v1ModulesPath),
-			ProvidersV1: fmt.Sprintf("%s/",v1ProvidersPath),
+			ProvidersV1: fmt.Sprintf("%s/", v1ProvidersPath),
 		}
 
 		return json.NewEncoder(w).Encode(resp)

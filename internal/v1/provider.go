@@ -24,6 +24,9 @@ type Provider interface {
 	CreateProvider() http.Handler
 	CreateProviderPlatform() http.Handler
 	CreateProviderVersion() http.Handler
+	DownloadPlatformBinary() http.Handler
+	DownloadSHASums() http.Handler
+	DownloadSHASumsSignature() http.Handler
 	FindPackage() http.Handler
 	ListAvailableVersions() http.Handler
 	UploadPlatformBinary() http.Handler
@@ -240,6 +243,76 @@ func (p *provider) CreateProviderVersion() http.Handler {
 		}
 
 		return json.NewEncoder(w).Encode(resp)
+	})
+}
+
+func (p *provider) DownloadPlatformBinary() http.Handler {
+	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+		version := mux.Vars(r)["version"]
+		os := mux.Vars(r)["os"]
+		arch := mux.Vars(r)["arch"]
+
+		l := p.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("registryName", registryName),
+			zap.String("version", version),
+			zap.String("os", os),
+			zap.String("arch", arch),
+		)
+
+		if err := p.driver.GetPlatformBinary(namespace, registryName, version, os, arch); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+
+		l.Info("saved platform binary")
+		return nil
+	})
+}
+
+func (p *provider) DownloadSHASums() http.Handler {
+	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+		version := mux.Vars(r)["version"]
+
+		l := p.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("registryName", registryName),
+			zap.String("version", version),
+		)
+
+		if err := p.driver.GetSHASums(namespace, registryName, version); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+
+		l.Info("saved platform binary")
+		return nil
+	})
+}
+
+func (p *provider) DownloadSHASumsSignature() http.Handler {
+	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		registryName := mux.Vars(r)["registryName"]
+		version := mux.Vars(r)["version"]
+
+		l := p.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("registryName", registryName),
+			zap.String("version", version),
+		)
+
+		if err := p.driver.GetSHASumsSig(namespace, registryName, version); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+
+		l.Info("saved platform binary")
+		return nil
 	})
 }
 
