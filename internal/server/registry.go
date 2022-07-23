@@ -51,8 +51,8 @@ func (s *Server) registerRegistryHandler() {
 	// Creates and get a provider version shasums
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
-	s.mux.Methods(http.MethodPut).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/shasums", v1ProvidersPath)).Handler(s.v1.Provider.UploadSHASums())
 	s.mux.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/shasums", v1ProvidersPath)).Handler(s.v1.Provider.DownloadSHASums())
+	s.mux.Methods(http.MethodPut).Path(fmt.Sprintf("%s/{namespace}/{registryName}/versions/{version}/shasums", v1ProvidersPath)).Handler(s.v1.Provider.UploadSHASums())
 
 	// Creates and get a provider version shasums signature
 	// Inspired by Terraform Cloud API:

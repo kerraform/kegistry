@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -262,12 +263,18 @@ func (p *provider) DownloadPlatformBinary() http.Handler {
 			zap.String("arch", arch),
 		)
 
-		if err := p.driver.GetPlatformBinary(namespace, registryName, version, os, arch); err != nil {
+		f, err := p.driver.GetPlatformBinary(namespace, registryName, version, os, arch)
+		if err != nil {
 			return err
 		}
-		defer r.Body.Close()
+		defer f.Close()
 
-		l.Info("saved platform binary")
+		w.Header().Set("Content-Type", "application/octet-stream")
+		if _, err := io.Copy(w, f); err != nil {
+			return err
+		}
+
+		l.Info("download platform binary")
 		return nil
 	})
 }
@@ -284,12 +291,18 @@ func (p *provider) DownloadSHASums() http.Handler {
 			zap.String("version", version),
 		)
 
-		if err := p.driver.GetSHASums(namespace, registryName, version); err != nil {
+		f, err := p.driver.GetSHASums(namespace, registryName, version)
+		if err != nil {
 			return err
 		}
-		defer r.Body.Close()
+		defer f.Close()
 
-		l.Info("saved platform binary")
+		w.Header().Set("Content-Type", "application/octet-stream")
+		if _, err := io.Copy(w, f); err != nil {
+			return err
+		}
+
+		l.Info("download shasums")
 		return nil
 	})
 }
@@ -306,12 +319,18 @@ func (p *provider) DownloadSHASumsSignature() http.Handler {
 			zap.String("version", version),
 		)
 
-		if err := p.driver.GetSHASumsSig(namespace, registryName, version); err != nil {
+		f, err := p.driver.GetSHASumsSig(namespace, registryName, version)
+		if err != nil {
 			return err
 		}
-		defer r.Body.Close()
+		defer f.Close()
 
-		l.Info("saved platform binary")
+		w.Header().Set("Content-Type", "application/octet-stream")
+		if _, err := io.Copy(w, f); err != nil {
+			return err
+		}
+
+		l.Info("download shasums signature")
 		return nil
 	})
 }

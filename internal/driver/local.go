@@ -63,16 +63,21 @@ func (l *local) CreateProviderVersion(namespace, registryName, version string) e
 	return nil
 }
 
-func (l *local) GetPlatformBinary(namespace, registryName, version, pos, arch string) error {
-	return nil
+func (l *local) GetPlatformBinary(namespace, registryName, version, pos, arch string) (io.ReadCloser, error) {
+	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
+	filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", registryName, version, pos, arch)
+	filepath := fmt.Sprintf("%s/%s", platformPath, filename)
+	return os.Open(filepath)
 }
 
-func (l *local) GetSHASums(namespace, registryName, version string) error {
-	return nil
+func (l *local) GetSHASums(namespace, registryName, version string) (io.ReadCloser, error) {
+	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/terraform-provider-%s_%s_SHA256SUMS", localRootPath, providerRootPath, namespace, registryName, version, registryName, version)
+	return os.Open(filepath)
 }
 
-func (l *local) GetSHASumsSig(namespace, registryName, version string) error {
-	return nil
+func (l *local) GetSHASumsSig(namespace, registryName, version string) (io.ReadCloser, error) {
+	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/terraform-provider-%s_%s_SHA256SUMS.sig", localRootPath, providerRootPath, namespace, registryName, version, registryName, version)
+	return os.Open(filepath)
 }
 
 func (l *local) FindPackage(namespace, registryName, version, pos, arch string) (*model.Package, error) {

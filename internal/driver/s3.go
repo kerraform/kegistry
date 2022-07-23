@@ -43,16 +43,16 @@ func (s3 *S3) CreateProviderVersion(namespace, registryName, version string) err
 	return nil
 }
 
-func (s3 *S3) GetPlatformBinary(namespace, registryName, version, pos, arch string) error {
-	return nil
+func (s3 *S3) GetPlatformBinary(namespace, registryName, version, pos, arch string) (io.ReadCloser, error) {
+	return nil, nil
 }
 
-func (s3 *S3) GetSHASums(namespace, registryName, version string) error {
-	return nil
+func (s3 *S3) GetSHASums(namespace, registryName, version string) (io.ReadCloser, error) {
+	return nil, nil
 }
 
-func (s3 *S3) GetSHASumsSig(namespace, registryName, version string) error {
-	return nil
+func (s3 *S3) GetSHASumsSig(namespace, registryName, version string) (io.ReadCloser, error) {
+	return nil, nil
 }
 
 func (s3 *S3) FindPackage(namespace, registryName, version, os, arch string) (*model.Package, error) {
