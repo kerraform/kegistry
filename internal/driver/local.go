@@ -98,7 +98,7 @@ func (l *local) FindPackage(namespace, registryName, version, pos, arch string) 
 	sha256Sum := hex.EncodeToString(sha256SumHex[:])
 	l.logger.Debug("generated sha256sum for file", zap.String("sha256sum", sha256Sum))
 
-	keysPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, registryName, version, keyDirname)
+	keysPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, keyDirname)
 	keys, err := ioutil.ReadDir(keysPath)
 	if err != nil {
 		return nil, err
@@ -106,32 +106,42 @@ func (l *local) FindPackage(namespace, registryName, version, pos, arch string) 
 
 	gpgKeys := []model.GPGPublicKey{}
 	for _, key := range keys {
-		f, err := ioutil.ReadFile(key.Name())
+		l.logger.Debug("found keys",
+			zap.Int("count", len(keys)),
+			zap.String("path", key.Name()),
+		)
+		f, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", keysPath, key.Name()))
 		if err != nil {
 			l.logger.Error("failed to read key file",
 				zap.String("file", key.Name()),
+				zap.Error(err),
 			)
 
 			continue
 		}
+
 		b := bytes.NewBuffer(f)
 		block, err := armor.Decode(b)
 		if err != nil {
+			l.logger.Error("failed to armor decode", zap.Error(err))
 			continue
 		}
 
 		if block.Type != openpgp.PublicKeyType {
+			l.logger.Error("skipping non public key type")
 			continue
 		}
 
 		reader := packet.NewReader(block.Body)
 		pkt, err := reader.Next()
 		if err != nil {
+			l.logger.Error("failed to packet read", zap.Error(err))
 			continue
 		}
 
 		k, ok := pkt.(*packet.PublicKey)
 		if !ok {
+			l.logger.Error("failed to cast packet to public key type")
 			continue
 		}
 
@@ -241,7 +251,7 @@ func (l *local) ListAvailableVersions(namespace, registryName string) ([]model.A
 	return vs, nil
 }
 
-func (local *local) SaveGPGKey(namespace string, key *packet.PublicKey) error {
+func (l *local) SaveGPGKey(namespace string, key *packet.PublicKey) error {
 	keyRootPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, keyDirname)
 	if err := os.MkdirAll(keyRootPath, 0700); err != nil {
 		return err
@@ -263,6 +273,7 @@ func (local *local) SaveGPGKey(namespace string, key *packet.PublicKey) error {
 	}
 	defer w.Close()
 
+	l.logger.Debug("saved gpg key", zap.String("filepath", keyPath))
 	return nil
 }
 
