@@ -2,6 +2,8 @@ package driver
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -63,23 +65,35 @@ func (l *local) CreateProviderVersion(namespace, registryName, version string) e
 
 func (l *local) FindPackage(namespace, registryName, version, pos, arch string) (*model.Package, error) {
 	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
-	filepath := fmt.Sprintf("%s/terraform-provider-%s_%s_%s_%s.zip", platformPath, registryName, version, pos, arch)
+	filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", registryName, version, pos, arch)
+	filepath := fmt.Sprintf("%s/%s", platformPath, filename)
 
 	if _, err := os.Stat(filepath); err != nil {
 		if os.IsNotExist(err) {
+			l.logger.Error("file not exist", zap.String("filepath", filepath))
 			return nil, ErrProviderBinaryNotExist
 		}
 
 		return nil, err
 	}
 
+	b, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	sha256SumHex := sha256.Sum256(b)
+	sha256Sum := hex.EncodeToString(sha256SumHex[:])
+	l.logger.Debug("generated sha256sum for file", zap.String("sha256sum", sha256Sum))
+
 	pkg := &model.Package{
 		OS:            pos,
 		Arch:          arch,
-		DownloadURL:   "",
-		SHASumsURL:    "",
-		SHASumsSigURL: "",
-		SHASum:        "",
+		Filename:      filename,
+		DownloadURL:   fmt.Sprintf("v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
+		SHASumsURL:    fmt.Sprintf("v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
+		SHASumsSigURL: fmt.Sprintf("v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
+		SHASum:        sha256Sum,
 	}
 
 	return pkg, nil
