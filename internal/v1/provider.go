@@ -283,8 +283,16 @@ func (p *provider) FindPackage() http.Handler {
 
 		pkg, err := p.driver.FindPackage(namespace, registryName, version, os, arch)
 		if err != nil {
+			if errors.Is(err, driver.ErrProviderBinaryNotExist) {
+				w.WriteHeader(http.StatusNotFound)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}
+
+		l.Info("package found")
 
 		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(pkg)

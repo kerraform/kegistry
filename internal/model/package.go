@@ -8,5 +8,4 @@ type Package struct {
 	SHASumsURL    string `json:"shasums_url"`
 	SHASumsSigURL string `json:"shasums_signature_url"`
 	SHASum        string `json:"shasum"`
-	
 }

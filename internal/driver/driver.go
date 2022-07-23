@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	ErrProviderBinaryNotExist  = errors.New("provider binary not exist")
 	ErrProviderNotExist        = errors.New("provider not exist")
 	ErrProviderVersionNotExist = errors.New("provider version not exist")
 )

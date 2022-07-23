@@ -61,8 +61,28 @@ func (l *local) CreateProviderVersion(namespace, registryName, version string) e
 	return nil
 }
 
-func (l *local) FindPackage(namespace, registryName, version, os, arch string) (*model.Package, error) {
-	return nil, nil
+func (l *local) FindPackage(namespace, registryName, version, pos, arch string) (*model.Package, error) {
+	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
+	filepath := fmt.Sprintf("%s/terraform-provider-%s_%s_%s_%s.zip", platformPath, registryName, version, pos, arch)
+
+	if _, err := os.Stat(filepath); err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrProviderBinaryNotExist
+		}
+
+		return nil, err
+	}
+
+	pkg := &model.Package{
+		OS:            pos,
+		Arch:          arch,
+		DownloadURL:   "",
+		SHASumsURL:    "",
+		SHASumsSigURL: "",
+		SHASum:        "",
+	}
+
+	return pkg, nil
 }
 
 func (l *local) IsProviderCreated(namespace, registryName string) error {
@@ -108,7 +128,7 @@ func (l *local) ListAvailableVersions(namespace, registryName string) ([]model.A
 			l.logger.Debug("skip file in version directory", zap.String("version", version.Name()))
 			continue
 		}
-
+		//
 		platforms, err := ioutil.ReadDir(filepath.Join(versionsRootPath, version.Name()))
 		if err != nil {
 			return nil, err
