@@ -157,19 +157,17 @@ func (l *local) FindPackage(namespace, registryName, version, pos, arch string) 
 		gpgKeys = append(gpgKeys, gpgKey)
 	}
 
-	signingKeys := []model.SigningKeys{
-		{
-			GPGPublicKeys: gpgKeys,
-		},
+	signingKeys := &model.SigningKeys{
+		GPGPublicKeys: gpgKeys,
 	}
 
 	pkg := &model.Package{
 		OS:            pos,
 		Arch:          arch,
 		Filename:      filename,
-		DownloadURL:   fmt.Sprintf("v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
-		SHASumsURL:    fmt.Sprintf("v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
-		SHASumsSigURL: fmt.Sprintf("v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
+		DownloadURL:   fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
+		SHASumsURL:    fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
+		SHASumsSigURL: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
 		SHASum:        sha256Sum,
 		SigningKeys:   signingKeys,
 	}
