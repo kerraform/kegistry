@@ -1,0 +1,6 @@
+
+FROM alpine:latest
+LABEL org.opencontainers.image.source https://github.com/kegistry/kerraform
+
+COPY kegistry /usr/bin
+ENTRYPOINT ["kegistry"]

@@ -1,0 +1,55 @@
+builds:
+  - id: kegistry
+    env:
+      - CGO_ENABLED=0
+    main: .
+    ldflags:
+      - -s -w
+      - -X github.com/kerraform/kegistry/internal/version.Version={{.Version}}
+      - -X github.com/kerraform/kegistry/internal/version.Commit={{.FullCommit}c
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - linux
+      - darwin
+      - windows
+dockers:
+  - build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--platform=linux/amd64"
+    dockerfile: Dockerfile.compile
+    extra_files:
+      - LICENSE
+    image_templates:
+      - "docker.pkg.github.com/kerraform/kegistry/kegistry:{{ .Tag }}"
+      - "docker.pkg.github.com/kerraform/kegistry/kegistry:v{{ .Major }}"
+      - "docker.pkg.github.com/kerraform/kegistry/kegistry:v{{ .Major }}.{{ .Minor }}"
+      - "docker.pkg.github.com/kerraform/kegistry/kegistry:latest"
+    goos: linux
+    goarch: amd64
+    ids:
+      - kegistry
+changelog:  
+  skip: false
+  groups:
+    - title: Features ✨
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: Doc 📚
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 1
+    - title: Bug Fixes 🐛
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 2
+    - title: Others 🎐s
+      order: 999
+release:  
+  github: 
+    owner: kerraform
+    name: kegistry
+  
