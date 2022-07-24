@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
 )
@@ -67,7 +66,7 @@ func (s3 *S3) IsProviderVersionCreated(namespace, registryName, version string) 
 	return nil
 }
 
-func (s3 *S3) SaveGPGKey(namespace string, key *packet.PublicKey) error {
+func (s3 *S3) SaveGPGKey(namespace, keyID string, key []byte) error {
 	return nil
 }
 

@@ -254,28 +254,20 @@ func (l *local) ListAvailableVersions(namespace, registryName string) ([]model.A
 	return vs, nil
 }
 
-func (l *local) SaveGPGKey(namespace string, key *packet.PublicKey) error {
+func (l *local) SaveGPGKey(namespace, keyID string, key []byte) error {
 	keyRootPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, keyDirname)
 	if err := os.MkdirAll(keyRootPath, 0700); err != nil {
 		return err
 	}
 
-	keyPath := fmt.Sprintf("%s/%s", keyRootPath, key.KeyIdString())
+	keyPath := fmt.Sprintf("%s/%s", keyRootPath, keyID)
 	f, err := os.Create(keyPath)
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
-	w, err := armor.Encode(f, openpgp.PublicKeyType, make(map[string]string))
-	if err != nil {
-		return err
-	}
-
-	if err := key.Serialize(w); err != nil {
-		return err
-	}
-	defer w.Close()
-
+	f.Write(key)
 	l.logger.Debug("saved gpg key", zap.String("filepath", keyPath))
 	return nil
 }

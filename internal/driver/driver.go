@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
 )
@@ -38,7 +37,7 @@ type Driver interface {
 	GetSHASumsSig(namespace, registryName, version string) (io.ReadCloser, error)
 	IsProviderCreated(namespace, registryName string) error
 	IsProviderVersionCreated(namespace, registryName, version string) error
-	SaveGPGKey(namespace string, key *packet.PublicKey) error
+	SaveGPGKey(namespace, keyID string, key []byte) error
 	SavePlatformBinary(namespace, registryName, version, os, arch string, body io.Reader) error
 	SaveSHASUMs(namespace, registryName, version string, body io.Reader) error
 	SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error

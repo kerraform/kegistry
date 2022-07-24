@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/ProtonMail/go-crypto/openpgp/armor"
-	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
+	"golang.org/x/crypto/openpgp/packet"
 )
 
 type Handler struct {
@@ -99,20 +99,21 @@ func (h *Handler) AddGPGKey() http.Handler {
 			return err
 		}
 
-		key, ok := pkt.(*packet.PublicKey)
+		pgpKey, ok := pkt.(*packet.PublicKey)
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			return fmt.Errorf("failed to read public key")
 		}
 
 		l.Info("received public key",
-			zap.String("keyID", key.KeyIdString()),
+			zap.String("keyID", pgpKey.KeyIdString()),
 		)
 
-		if err := h.driver.SaveGPGKey(req.Data.Attributes.Namespace, key); err != nil {
+		if err := h.driver.SaveGPGKey(req.Data.Attributes.Namespace, pgpKey.KeyIdString(), []byte(req.Data.Attributes.ASCIIArmor)); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}
+		defer r.Body.Close()
 
 		l.Info("saved gpg key")
 		return nil
