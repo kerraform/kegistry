@@ -267,7 +267,9 @@ func (l *local) SaveGPGKey(namespace, keyID string, key []byte) error {
 	}
 	defer f.Close()
 
-	f.Write(key)
+	if _, err := f.Write(key); err != nil {
+		return err
+	}
 	l.logger.Debug("saved gpg key", zap.String("filepath", keyPath))
 	return nil
 }
