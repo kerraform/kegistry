@@ -165,7 +165,7 @@ func (l *local) FindPackage(namespace, registryName, version, pos, arch string) 
 		OS:            pos,
 		Arch:          arch,
 		Filename:      filename,
-		DownloadURL:   fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
+		DownloadURL:   fmt.Sprintf("/v1/providers/%s/%s/versions/%s/%s/%s/binary", namespace, registryName, version, pos, arch),
 		SHASumsURL:    fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
 		SHASumsSigURL: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
 		SHASum:        sha256Sum,
