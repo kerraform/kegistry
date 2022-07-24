@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kegistry
+  labels:
+    app: kegistry
+spec:
+  selector:
+    matchLabels:
+      app: kegistry
+  template:
+    metadata:
+      labels:
+        app: kegistry
+    spec:
+      containers:
+        - name: kegistry
+          image: docker.pkg.github.com/kerraform/kegistry/kegistry:v0.0.1
+          ports:
+            - name: http
+              containerPort: 8888
+          livenessProbe:
+            httpGet:
+              - port: http
+                path: /healthz
+          readinessProbe:
+            httpGet:
+              - port: http
+                path: /healthz
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 128Mi
