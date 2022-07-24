@@ -26,6 +26,7 @@ jobs:
           reporter: github-pr-review
 
   test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -44,6 +45,7 @@ jobs:
       run: go test ./... -v
 
   build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
