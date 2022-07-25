@@ -138,8 +138,7 @@ func (d *S3) FindPackage(ctx context.Context, namespace, registryName, version, 
 
 	downloader := manager.NewDownloader(d.s3)
 
-	bytes := []byte{}
-	b := manager.NewWriteAtBuffer(bytes)
+	b := manager.NewWriteAtBuffer([]byte{})
 	_, err := downloader.Download(ctx, b, &s3.GetObjectInput{
 		Bucket: aws.String(d.bucket),
 		Key:    aws.String(filepath),
@@ -149,7 +148,7 @@ func (d *S3) FindPackage(ctx context.Context, namespace, registryName, version, 
 	}
 
 	versionRootPath := fmt.Sprintf("%s/%s/%s/versions/%s", providerRootPath, namespace, registryName, version)
-	sha256SumHex := sha256.Sum256(bytes)
+	sha256SumHex := sha256.Sum256(b.Bytes())
 	sha256Sum := hex.EncodeToString(sha256SumHex[:])
 
 	psc := s3.NewPresignClient(d.s3)
