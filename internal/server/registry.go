@@ -21,7 +21,7 @@ func (s *Server) registerRegistryHandler() {
 	// Module Registry Protocol
 	// List Available Versions
 	// https://www.terraform.io/internals/module-registry-protocol#list-available-versions-for-a-specific-module
-	s.mux.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{name}/{provider}/versions", v1ModulesPath)).Handler(s.v1.Provider.ListAvailableVersions())
+	s.mux.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{name}/{provider}/versions", v1ModulesPath)).Handler(s.v1.Module.ListAvailableVersions())
 
 	// Download source code
 	// https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version

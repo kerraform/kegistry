@@ -1,4 +1,4 @@
-package v1
+package provider
 
 import (
 	"encoding/json"
@@ -41,12 +41,12 @@ type provider struct {
 
 var _ Provider = (*provider)(nil)
 
-type providerConfig struct {
+type Config struct {
 	Driver driver.Driver
 	Logger *zap.Logger
 }
 
-func newProvider(cfg *providerConfig) Provider {
+func New(cfg *Config) Provider {
 	return &provider{
 		driver: cfg.Driver,
 		logger: cfg.Logger,

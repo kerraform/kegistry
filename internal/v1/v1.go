@@ -8,6 +8,8 @@ import (
 
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
+	"github.com/kerraform/kegistry/internal/v1/module"
+	"github.com/kerraform/kegistry/internal/v1/provider"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
@@ -18,8 +20,8 @@ type Handler struct {
 	logger *zap.Logger
 	driver driver.Driver
 
-	Module   Module
-	Provider Provider
+	Module   module.Module
+	Provider provider.Provider
 }
 
 type HandlerConfig struct {
@@ -28,12 +30,12 @@ type HandlerConfig struct {
 }
 
 func New(cfg *HandlerConfig) *Handler {
-	module := newModule(&moduleConfig{
+	module := module.New(&module.Config{
 		Driver: cfg.Driver,
 		Logger: cfg.Logger.Named("v1.module"),
 	})
 
-	provider := newProvider(&providerConfig{
+	provider := provider.New(&provider.Config{
 		Driver: cfg.Driver,
 		Logger: cfg.Logger.Named("v1.provider"),
 	})
