@@ -46,13 +46,15 @@ func (d *local) CreateProvider(ctx context.Context, namespace, registryName stri
 	return nil
 }
 
-func (d *local) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, pos, arch string) error {
+func (d *local) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, pos, arch string) (*CreateProviderPlatformResult, error) {
 	platformRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
 	if err := os.MkdirAll(platformRootPath, 0700); err != nil {
-		return err
+		return nil, err
 	}
 	d.logger.Debug("created platform path", zap.String("path", platformRootPath))
-	return nil
+	return &CreateProviderPlatformResult{
+		ProviderBinaryUploads: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/%s/%s/binary", namespace, registryName, version, pos, arch),
+	}, nil
 }
 
 func (d *local) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error) {

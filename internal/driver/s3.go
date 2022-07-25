@@ -68,8 +68,20 @@ func (d *S3) CreateProvider(ctx context.Context, namespace, registryName string)
 	return nil
 }
 
-func (d *S3) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, osName, arch string) error {
-	return nil
+func (d *S3) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, pos, arch string) (*CreateProviderPlatformResult, error) {
+	binaryPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s/terraform-provider-%s_%s_%s_%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch, registryName, version, pos, arch)
+	psc := s3.NewPresignClient(d.s3)
+	binaryUploadURL, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(binaryPath),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &CreateProviderPlatformResult{
+		ProviderBinaryUploads: binaryUploadURL.URL,
+	}, nil
 }
 
 func (d *S3) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error) {

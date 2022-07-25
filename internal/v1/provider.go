@@ -3,7 +3,6 @@ package v1
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -139,7 +138,8 @@ func (p *provider) CreateProviderPlatform() http.Handler {
 			zap.String("arch", req.Data.Attributes.Arch),
 		)
 
-		if err := p.driver.CreateProviderPlatform(r.Context(), namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch); err != nil {
+		result, err := p.driver.CreateProviderPlatform(r.Context(), namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch)
+		if err != nil {
 			return err
 		}
 		defer r.Body.Close()
@@ -150,7 +150,7 @@ func (p *provider) CreateProviderPlatform() http.Handler {
 			Data: &CreateProviderPlatformResponseData{
 				Type: DataTypeRegistryProviderPlatforms,
 				Links: &CreateProviderPlatformResponseDataLink{
-					ProviderBinaryUploads: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/%s/%s/binary", namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch),
+					ProviderBinaryUploads: result.ProviderBinaryUploads,
 				},
 			},
 		}

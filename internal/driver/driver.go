@@ -31,7 +31,7 @@ const (
 
 type Driver interface {
 	CreateProvider(ctx context.Context, namespace, registryName string) error
-	CreateProviderPlatform(ctx context.Context, namespace, registryName, version, os, arch string) error
+	CreateProviderPlatform(ctx context.Context, namespace, registryName, version, os, arch string) (*CreateProviderPlatformResult, error)
 	CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error)
 	GetPlatformBinary(ctx context.Context, namespace, registryName, version, os, arch string) (io.ReadCloser, error)
 	GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
@@ -82,4 +82,8 @@ func NewDriver(driverType DriverType, logger *zap.Logger, opts ...DriverOpt) (Dr
 type CreateProviderVersionResult struct {
 	SHASumsUpload    string
 	SHASumsSigUpload string
+}
+
+type CreateProviderPlatformResult struct {
+	ProviderBinaryUploads string
 }
