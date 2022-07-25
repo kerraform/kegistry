@@ -10,12 +10,14 @@ import (
 	"net/http"
 	"time"
 
+	credentials "cloud.google.com/go/iam/credentials/apiv1"
 	"cloud.google.com/go/storage"
 	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	gOption "google.golang.org/api/option"
+	credentialspb "google.golang.org/genproto/googleapis/iam/credentials/v1"
 )
 
 var (
@@ -25,6 +27,7 @@ var (
 type GCS struct {
 	bucket string
 	logger *zap.Logger
+	iam    *credentials.IamCredentialsClient
 	gcs    *storage.Client
 }
 
@@ -40,14 +43,20 @@ func newGCSDriver(ctx context.Context, logger *zap.Logger, opts *GCSOpts) (Drive
 	}
 
 	gOptions = append(gOptions, gOption.WithCredentials(creds))
-	c, err := storage.NewClient(ctx, gOptions...)
+	gcsClient, err := storage.NewClient(ctx, gOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	iamClient, err := credentials.NewIamCredentialsClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	return &GCS{
 		bucket: opts.Bucket,
-		gcs:    c,
+		gcs:    gcsClient,
+		iam:    iamClient,
 		logger: logger.With(zap.String("bucket", opts.Bucket)),
 	}, nil
 }
@@ -58,12 +67,25 @@ func (d *GCS) CreateProvider(ctx context.Context, namespace, registryName string
 
 func (d *GCS) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, pos, arch string) (*CreateProviderPlatformResult, error) {
 	binaryPath := fmt.Sprintf("%s/%s/%s/versions/%s/%s-%s/terraform-provider-%s_%s_%s_%s.zip", providerRootPath, namespace, registryName, version, pos, arch, registryName, version, pos, arch)
-	// TODO(@KeisukeYamashita): Implement sign bytes
 	opts := &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
 		Expires: time.Now().Add(15 * time.Minute),
 		Method:  http.MethodGet,
+		Scheme:  storage.SigningSchemeV4,
 	}
+
+	opts.SignBytes = func(b []byte) ([]byte, error) {
+		req := &credentialspb.SignBlobRequest{
+			Payload: b,
+		}
+
+		resp, err := d.iam.SignBlob(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+
+		return resp.SignedBlob, err
+	}
+
 	u, err := storage.SignedURL(d.bucket, fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", binaryPath, registryName, version), opts)
 	if err != nil {
 		return nil, err
@@ -76,27 +98,39 @@ func (d *GCS) CreateProviderPlatform(ctx context.Context, namespace, registryNam
 
 func (d *GCS) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error) {
 	versionRootPath := fmt.Sprintf("%s/%s/%s/versions/%s", providerRootPath, namespace, registryName, version)
-	// TODO(@KeisukeYamashita): Implement sign bytes
-	opts := &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
+	opts := &storage.PostPolicyV4Options{
+		// Scheme:  storage.SigningSchemeV4,
 		Expires: time.Now().Add(15 * time.Minute),
-		Method:  http.MethodGet,
+		// Method:  http.MethodGet,
 	}
 
-	sha256SumKeyUploadURL, err := storage.SignedURL(d.bucket, fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version), opts)
+	opts.SignRawBytes = func(b []byte) ([]byte, error) {
+		req := &credentialspb.SignBlobRequest{
+			Payload: b,
+		}
+
+		resp, err := d.iam.SignBlob(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+
+		return resp.SignedBlob, err
+	}
+
+	sha256SumKeyUploadURL, err := d.Bucket().GenerateSignedPostPolicyV4(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version), opts)
 	if err != nil {
 		return nil, err
 	}
 
-	sha256SumSigKeyUploadURL, err := storage.SignedURL(d.bucket, fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version), opts)
+	sha256SumSigKeyUploadURL, err := d.Bucket().GenerateSignedPostPolicyV4(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version), opts)
 	if err != nil {
 		return nil, err
 	}
 
 	d.logger.Debug("created provider version path", zap.String("path", versionRootPath))
 	return &CreateProviderVersionResult{
-		SHASumsUpload:    sha256SumKeyUploadURL,
-		SHASumsSigUpload: sha256SumSigKeyUploadURL,
+		SHASumsUpload:    sha256SumKeyUploadURL.URL,
+		SHASumsSigUpload: sha256SumSigKeyUploadURL.URL,
 	}, nil
 }
 
