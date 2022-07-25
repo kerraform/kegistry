@@ -3,6 +3,7 @@ package driver
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -118,18 +119,100 @@ func (d *S3) SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte
 }
 
 func (d *S3) SavePlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string, body io.Reader) error {
+	platformPath := fmt.Sprintf("%s/%s/%s/versions/%s/%s-%s", providerRootPath, namespace, registryName, version, pos, arch)
+	if err := d.IsProviderVersionCreated(ctx, namespace, registryName, version); err != nil {
+		return err
+	}
+
+	filepath := fmt.Sprintf("%s/terraform-provider-%s_%s_%s_%s.zip", platformPath, registryName, version, pos, arch)
+	uploader := manager.NewUploader(d.s3)
+	res, err := uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(filepath),
+		Body:   body,
+	})
+	if err != nil {
+		return err
+	}
+
+	d.logger.Debug("saved platform binary to amazon s3", zap.String("location", res.Location))
 	return nil
 }
 
 func (d *S3) SaveSHASUMs(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
+	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
+	if err := d.IsProviderVersionCreated(ctx, namespace, registryName, version); err != nil {
+		return err
+	}
+
+	filepath := fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)
+	uploader := manager.NewUploader(d.s3)
+	res, err := uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(filepath),
+		Body:   body,
+	})
+	if err != nil {
+		return err
+	}
+
+	d.logger.Debug("save shasums to amazon s3",
+		zap.String("location", res.Location),
+	)
 	return nil
 }
 
 func (d *S3) SaveSHASUMsSig(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
+	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
+	if err := d.IsProviderVersionCreated(ctx, namespace, registryName, version); err != nil {
+		return err
+	}
+
+	filepath := fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)
+	uploader := manager.NewUploader(d.s3)
+	res, err := uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(filepath),
+		Body:   body,
+	})
+	if err != nil {
+		return err
+	}
+
+	d.logger.Debug("save shasums signature to amazon s3",
+		zap.String("location", res.Location),
+	)
 	return nil
 }
 
 func (d *S3) SaveVersionMetadata(ctx context.Context, namespace, registryName, version, keyID string) error {
+	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s", localRootPath, providerRootPath, namespace, registryName, version, versionMetadataFilename)
+	if err := d.IsProviderVersionCreated(ctx, namespace, registryName, version); err != nil {
+		return err
+	}
+
+	b := new(bytes.Buffer)
+	metadata := &ProviderVersionMetadata{
+		KeyID: keyID,
+	}
+
+	if err := json.NewEncoder(b).Encode(metadata); err != nil {
+		return err
+	}
+
+	uploader := manager.NewUploader(d.s3)
+	res, err := uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(filepath),
+		Body:   b,
+	})
+	if err != nil {
+		return err
+	}
+
+	d.logger.Debug("save version metadata to amazon s3",
+		zap.String("location", res.Location),
+	)
 	return nil
 }
 

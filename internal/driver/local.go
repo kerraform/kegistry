@@ -349,5 +349,8 @@ func (d *local) SaveVersionMetadata(ctx context.Context, namespace, registryName
 	}
 
 	_, err = io.Copy(f, b)
+	d.logger.Debug("save version metadata",
+		zap.String("path", filepath),
+	)
 	return err
 }
