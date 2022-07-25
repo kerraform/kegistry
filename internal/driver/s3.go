@@ -310,9 +310,9 @@ func (d *S3) ListAvailableVersions(ctx context.Context, namespace, registryName 
 			continue
 		}
 
-		version := result[1]
-		pos := result[2]
-		arch := result[3]
+		version := result[2]
+		pos := result[3]
+		arch := result[4]
 
 		platforms[version] = append(platforms[version], model.AvailableVersionPlatform{
 			OS:   pos,
