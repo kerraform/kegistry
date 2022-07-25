@@ -3,6 +3,8 @@ package driver
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -129,8 +131,64 @@ func (d *S3) GetSHASumsSig(ctx context.Context, namespace, registryName, version
 	return nil, nil
 }
 
-func (d *S3) FindPackage(ctx context.Context, namespace, registryName, version, os, arch string) (*model.Package, error) {
-	return nil, nil
+func (d *S3) FindPackage(ctx context.Context, namespace, registryName, version, pos, arch string) (*model.Package, error) {
+	platformPath := fmt.Sprintf("%s/%s/%s/versions/%s/%s-%s", providerRootPath, namespace, registryName, version, pos, arch)
+	filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", registryName, version, pos, arch)
+	filepath := fmt.Sprintf("%s/%s", platformPath, filename)
+
+	downloader := manager.NewDownloader(d.s3)
+
+	bytes := []byte{}
+	b := manager.NewWriteAtBuffer(bytes)
+	_, err := downloader.Download(ctx, b, &s3.GetObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(filepath),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	versionRootPath := fmt.Sprintf("%s/%s/%s/versions/%s", providerRootPath, namespace, registryName, version)
+	sha256SumHex := sha256.Sum256(bytes)
+	sha256Sum := hex.EncodeToString(sha256SumHex[:])
+
+	psc := s3.NewPresignClient(d.s3)
+	platformBinaryDownload, err := psc.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(filepath),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sha256SumKeyDownload, err := psc.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sha256SumSigKeyDownload, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	pkg := &model.Package{
+		OS:            pos,
+		Arch:          arch,
+		Filename:      filename,
+		DownloadURL:   platformBinaryDownload.URL,
+		SHASumsURL:    sha256SumKeyDownload.URL,
+		SHASumsSigURL: sha256SumSigKeyDownload.URL,
+		SHASum:        sha256Sum,
+		// SigningKeys:   signingKeys,
+	}
+
+	return pkg, nil
 }
 
 func (d *S3) IsProviderCreated(ctx context.Context, namespace, registryName string) error {
@@ -165,7 +223,7 @@ func (d *S3) ListAvailableVersions(ctx context.Context, namespace, registryName 
 		}
 		result := platformBinaryRegex.FindStringSubmatch(*obj.Key)
 
-		if len(result) != 4 {
+		if len(result) < 3 {
 			continue
 		}
 
