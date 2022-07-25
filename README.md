@@ -39,7 +39,6 @@ Theses are environment variable list that you can configure.
 | `PORT`  | Port to listen | `int` | `8888` |
 | `BACKEND_TYPE` | Storage driver to use (supports `local`, `gcs` and `s3`) | `string` | (required) |
 | `BACKEND_GCS_BUCKET` | Name of the GCS bucket | `string` |  (Required if `BACKEND_TYPE` is `gcs`) |
-| `BACKEND_GCS_SERVICE_ACCOUNT_KEY` | Path to the service account key. Note that if you are running kegistry on GCP environment, I recommend to use the runtime service account or the [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) to make kegistry ready with keyless manner.  | `string` |   |
 | `BACKEND_S3_ACCESS_KEY` | Access key of Amazon S3 | `string` |  - (Required if `BACKEND_TYPE` is `s3`) |
 | `BACKEND_S3_BUCKET` | Amazon S3 Bucket name to store the resources | `string` |  (Required if `BACKEND_TYPE` is `s3`) |
 | `BACKEND_S3_ENDPOINT` | Endpoint of the Amazon S3 compatible object storage. Ignore if you are using Amazon S3  | `string` |  |

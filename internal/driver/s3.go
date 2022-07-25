@@ -73,7 +73,7 @@ func newS3Driver(ctx context.Context, logger *zap.Logger, opts *S3Opts) (Driver,
 
 	return &S3{
 		bucket: opts.Bucket,
-		logger: logger,
+		logger: logger.With(zap.String("bucket", opts.Bucket)),
 		s3: s3.NewFromConfig(cfg, func(o *s3.Options) {
 			o.UsePathStyle = opts.UsePathStyle
 		}),

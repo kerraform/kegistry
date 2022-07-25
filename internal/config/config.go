@@ -9,13 +9,18 @@ import (
 )
 
 type Backend struct {
-	S3   *BackendS3 `env:",prefix=S3_"`
-	Type string     `env:"TYPE,required"`
+	GCS  *BackendGCS `env:",prefix=GCS_"`
+	S3   *BackendS3  `env:",prefix=S3_"`
+	Type string      `env:"TYPE,required"`
 }
 
 func (b *Backend) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("type", b.Type)
 	return nil
+}
+
+type BackendGCS struct {
+	Bucket string `env:"BUCKET"`
 }
 
 type BackendS3 struct {

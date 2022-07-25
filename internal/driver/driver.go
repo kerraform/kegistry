@@ -62,6 +62,12 @@ type ProviderVersionMetadata struct {
 	KeyID string `json:"key-id"`
 }
 
+func WithGCS(gcsOpts *GCSOpts) DriverOpt {
+	return func(opts *driverOpts) {
+		opts.GCS = gcsOpts
+	}
+}
+
 func WithS3(s3Opts *S3Opts) DriverOpt {
 	return func(opts *driverOpts) {
 		opts.S3 = s3Opts
