@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -29,21 +30,21 @@ const (
 )
 
 type Driver interface {
-	CreateProvider(namespace, registryName string) error
-	CreateProviderPlatform(namespace, registryName, version, os, arch string) error
-	CreateProviderVersion(namespace, registryName, version string) error
-	GetPlatformBinary(namespace, registryName, version, os, arch string) (io.ReadCloser, error)
-	GetSHASums(namespace, registryName, version string) (io.ReadCloser, error)
-	GetSHASumsSig(namespace, registryName, version string) (io.ReadCloser, error)
-	IsProviderCreated(namespace, registryName string) error
-	IsProviderVersionCreated(namespace, registryName, version string) error
-	SaveGPGKey(namespace, keyID string, key []byte) error
-	SavePlatformBinary(namespace, registryName, version, os, arch string, body io.Reader) error
-	SaveSHASUMs(namespace, registryName, version string, body io.Reader) error
-	SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error
-	SaveVersionMetadata(namespace, registryName, version, keyID string) error
-	ListAvailableVersions(namespace, registryName string) ([]model.AvailableVersion, error)
-	FindPackage(namespace, registryName, version, os, arch string) (*model.Package, error)
+	CreateProvider(ctx context.Context, namespace, registryName string) error
+	CreateProviderPlatform(ctx context.Context, namespace, registryName, version, os, arch string) error
+	CreateProviderVersion(ctx context.Context, namespace, registryName, version string) error
+	GetPlatformBinary(ctx context.Context, namespace, registryName, version, os, arch string) (io.ReadCloser, error)
+	GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
+	GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
+	IsProviderCreated(ctx context.Context, namespace, registryName string) error
+	IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error
+	SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error
+	SavePlatformBinary(ctx context.Context, namespace, registryName, version, os, arch string, body io.Reader) error
+	SaveSHASUMs(ctx context.Context, namespace, registryName, version string, body io.Reader) error
+	SaveSHASUMsSig(ctx context.Context, namespace, registryName, version string, body io.Reader) error
+	SaveVersionMetadata(ctx context.Context, namespace, registryName, version, keyID string) error
+	ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]model.AvailableVersion, error)
+	FindPackage(ctx context.Context, namespace, registryName, version, os, arch string) (*model.Package, error)
 }
 
 type driverOpts struct {

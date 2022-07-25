@@ -59,6 +59,8 @@ func run(args []string) error {
 	case driver.DriverTypeS3:
 		opts = append(opts, driver.WithS3(&driver.S3Opts{
 			AccessKey: cfg.Backend.S3.AccessKey,
+			Bucket:    cfg.Backend.S3.Bucket,
+			Endpoint:  cfg.Backend.S3.Endpoint,
 			SecretKey: cfg.Backend.S3.SecretKey,
 		}))
 	}

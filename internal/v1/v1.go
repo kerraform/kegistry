@@ -109,7 +109,7 @@ func (h *Handler) AddGPGKey() http.Handler {
 			zap.String("keyID", pgpKey.KeyIdString()),
 		)
 
-		if err := h.driver.SaveGPGKey(req.Data.Attributes.Namespace, pgpKey.KeyIdString(), []byte(req.Data.Attributes.ASCIIArmor)); err != nil {
+		if err := h.driver.SaveGPGKey(r.Context(), req.Data.Attributes.Namespace, pgpKey.KeyIdString(), []byte(req.Data.Attributes.ASCIIArmor)); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}

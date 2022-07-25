@@ -1,91 +1,138 @@
 package driver
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
 )
 
 type S3 struct {
-	accessKey string
-	logger    *zap.Logger
-	secretKey string
+	bucket string
+	logger *zap.Logger
+	s3     *s3.Client
 }
 
 type S3Opts struct {
 	AccessKey string
+	Bucket    string
+	Endpoint  string
 	SecretKey string
+}
+
+type endpointResolver struct {
+	URL string
+}
+
+func (r *endpointResolver) ResolveEndpoint(service, region string, options ...interface{}) (aws.Endpoint, error) {
+	return aws.Endpoint{
+		URL: r.URL,
+	}, nil
 }
 
 func newS3Driver(logger *zap.Logger, opts *S3Opts) (Driver, error) {
 	if opts == nil {
 		return nil, fmt.Errorf("invalid s3 credentials")
 	}
+
+	endpointResolver := &endpointResolver{
+		URL: opts.Endpoint,
+	}
+
+	cred := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(opts.AccessKey, opts.SecretKey, ""))
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithCredentialsProvider(cred),
+		config.WithEndpointResolverWithOptions(endpointResolver),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &S3{
-		accessKey: opts.AccessKey,
-		logger:    logger,
-		secretKey: opts.SecretKey,
+		bucket: opts.Bucket,
+		logger: logger,
+		s3:     s3.NewFromConfig(cfg),
 	}, nil
 }
 
-func (s3 *S3) CreateProvider(namespace, registryName string) error {
+func (d *S3) CreateProvider(ctx context.Context, namespace, registryName string) error {
 	return nil
 }
 
-func (s3 *S3) CreateProviderPlatform(namespace, registryName, version, osName, arch string) error {
+func (d *S3) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, osName, arch string) error {
 	return nil
 }
 
-func (s3 *S3) CreateProviderVersion(namespace, registryName, version string) error {
+func (d *S3) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) error {
 	return nil
 }
 
-func (s3 *S3) GetPlatformBinary(namespace, registryName, version, pos, arch string) (io.ReadCloser, error) {
+func (d *S3) GetPlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string) (io.ReadCloser, error) {
 	return nil, nil
 }
 
-func (s3 *S3) GetSHASums(namespace, registryName, version string) (io.ReadCloser, error) {
+func (d *S3) GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error) {
 	return nil, nil
 }
 
-func (s3 *S3) GetSHASumsSig(namespace, registryName, version string) (io.ReadCloser, error) {
+func (d *S3) GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error) {
 	return nil, nil
 }
 
-func (s3 *S3) FindPackage(namespace, registryName, version, os, arch string) (*model.Package, error) {
+func (d *S3) FindPackage(ctx context.Context, namespace, registryName, version, os, arch string) (*model.Package, error) {
 	return nil, nil
 }
 
-func (s3 *S3) IsProviderCreated(namespace, registryName string) error {
+func (d *S3) IsProviderCreated(ctx context.Context, namespace, registryName string) error {
 	return nil
 }
 
-func (s3 *S3) IsProviderVersionCreated(namespace, registryName, version string) error {
+func (d *S3) IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error {
 	return nil
 }
 
-func (s3 *S3) SaveGPGKey(namespace, keyID string, key []byte) error {
+func (d *S3) SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error {
+	keyPath := fmt.Sprintf("%s/%s/%s/%s", providerRootPath, namespace, keyDirname, keyID)
+	uploader := manager.NewUploader(d.s3)
+
+	b := bytes.NewBuffer(key)
+	res, err := uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(keyPath),
+		Body:   b,
+	})
+	if err != nil {
+		return err
+	}
+
+	d.logger.Debug("saved gpg key to amazon s3", zap.String("location", res.Location))
 	return nil
 }
 
-func (s3 *S3) SavePlatformBinary(namespace, registryName, version, pos, arch string, body io.Reader) error {
+func (d *S3) SavePlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string, body io.Reader) error {
 	return nil
 }
 
-func (s3 *S3) SaveSHASUMs(namespace, registryName, version string, body io.Reader) error {
+func (d *S3) SaveSHASUMs(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
 	return nil
 }
 
-func (s3 *S3) SaveSHASUMsSig(namespace, registryName, version string, body io.Reader) error {
+func (d *S3) SaveSHASUMsSig(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
 	return nil
 }
 
-func (s3 *S3) SaveVersionMetadata(namespace, registryName, version, keyID string) error {
+func (d *S3) SaveVersionMetadata(ctx context.Context, namespace, registryName, version, keyID string) error {
 	return nil
 }
 
-func (s3 *S3) ListAvailableVersions(namespace, registryName string) ([]model.AvailableVersion, error) {
+func (d *S3) ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]model.AvailableVersion, error) {
 	return []model.AvailableVersion{}, nil
 }

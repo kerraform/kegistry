@@ -37,6 +37,7 @@ Theses are environment variable list that you can configure.
 | `BACKEND_TYPE` | Storage driver to use (supports `local` and `s3`) | `string` | (required) |
 | `BACKEND_S3_ACCESS_KEY` | Access key of Amazon S3 | `string` |  - (Required if `BACKEND_TYPE` is `s3`) |
 | `BACKEND_S3_BUCKET` | Amazon S3 Bucket name to store the resources | `string` |  - (Required if `BACKEND_TYPE` is `s3`) |
+| `BACKEND_S3_ENDPOINT` | Endpoint of the Amazon S3 compatible object storage. Ignore if you are using Amazon S3  | `string` |  |
 | `BACKEND_S3_SECRET_KEY` | Secret key of Amazon S3 | `string` |  - (Required if `BACKEND_TYPE` is `s3`) |
 | `LOG_FORMAT` | Format of the logs (supports `json`, `console`, `color`) | `string` | `json` | 
 | `LOG_LEVEL` | Level of the logs (supports `info`, `debug`, `warn`, `error`) | `string` | `info` |

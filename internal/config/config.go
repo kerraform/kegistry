@@ -21,6 +21,7 @@ func (b *Backend) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 type BackendS3 struct {
 	AccessKey string `env:"ACCESS_KEY"`
 	Bucket    string `env:"BUCKET"`
+	Endpoint  string `env:"ENDPOINT"`
 	SecretKey string `env:"SECRET_KEY"`
 }
 
