@@ -9,7 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"path/filepath"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/ProtonMail/go-crypto/openpgp"
@@ -63,44 +65,45 @@ func (d *GCS) CreateProvider(ctx context.Context, namespace, registryName string
 
 func (d *GCS) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, pos, arch string) (*CreateProviderPlatformResult, error) {
 	binaryPath := fmt.Sprintf("%s/%s/%s/versions/%s/%s-%s/terraform-provider-%s_%s_%s_%s.zip", providerRootPath, namespace, registryName, version, pos, arch, registryName, version, pos, arch)
-	psc := s3.NewPresignClient(d.s3)
-	binaryUploadURL, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(d.bucket),
-		Key:    aws.String(binaryPath),
-	})
+	// TODO(@KeisukeYamashita): Implement sign bytes
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Expires: time.Now().Add(15 * time.Minute),
+		Method:  http.MethodGet,
+	}
+	u, err := storage.SignedURL(d.bucket, fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", binaryPath, registryName, version), opts)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CreateProviderPlatformResult{
-		ProviderBinaryUploads: binaryUploadURL.URL,
+		ProviderBinaryUploads: u,
 	}, nil
 }
 
 func (d *GCS) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error) {
 	versionRootPath := fmt.Sprintf("%s/%s/%s/versions/%s", providerRootPath, namespace, registryName, version)
-	psc := s3.NewPresignClient(d.s3)
-	sha256SumKeyUploadURL, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(d.bucket),
-		Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)),
-	})
+	// TODO(@KeisukeYamashita): Implement sign bytes
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Expires: time.Now().Add(15 * time.Minute),
+		Method:  http.MethodGet,
+	}
+
+	sha256SumKeyUploadURL, err := storage.SignedURL(d.bucket, fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version), opts)
 	if err != nil {
 		return nil, err
 	}
 
-	sha256SumSigKeyUploadURL, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(d.bucket),
-		Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)),
-	})
+	sha256SumSigKeyUploadURL, err := storage.SignedURL(d.bucket, fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version), opts)
 	if err != nil {
 		return nil, err
 	}
 
 	d.logger.Debug("created provider version path", zap.String("path", versionRootPath))
-
 	return &CreateProviderVersionResult{
-		SHASumsUpload:    sha256SumKeyUploadURL.URL,
-		SHASumsSigUpload: sha256SumSigKeyUploadURL.URL,
+		SHASumsUpload:    sha256SumKeyUploadURL,
+		SHASumsSigUpload: sha256SumSigKeyUploadURL,
 	}, nil
 }
 
