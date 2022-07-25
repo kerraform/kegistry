@@ -365,7 +365,7 @@ func (d *S3) SaveSHASUMsSig(ctx context.Context, namespace, registryName, versio
 }
 
 func (d *S3) SaveVersionMetadata(ctx context.Context, namespace, registryName, version, keyID string) error {
-	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s", localRootPath, providerRootPath, namespace, registryName, version, versionMetadataFilename)
+	filepath := fmt.Sprintf("%s/%s/%s/versions/%s/%s", providerRootPath, namespace, registryName, version, versionMetadataFilename)
 	if err := d.IsProviderVersionCreated(ctx, namespace, registryName, version); err != nil {
 		return err
 	}
