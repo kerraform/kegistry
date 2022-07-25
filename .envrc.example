@@ -1,0 +1,24 @@
+export LOG_LEVEL=info
+export PORT=8888
+
+# On Local storage usage
+# export BACKEND_TYPE=local
+
+# On Amazon S3 storage usage
+# export BACKEND_TYPE=s3
+# export BACKEND_S3_ACCESS_KEY=
+# export BACKEND_S3_BUCKET=
+# export BACKEND_S3_ENDPOINT=
+# export BACKEND_S3_SECRET_KEY=
+
+# On MinIO
+# export BACKEND_TYPE=s3
+# export BACKEND_S3_ACCESS_KEY=
+# export BACKEND_S3_BUCKET=
+# export BACKEND_S3_ENDPOINT=
+# export BACKEND_S3_SECRET_KEY=
+# export BACKEND_S3_USE_PATH_STYLE=
+
+# On GCS
+# export BACKEND_TYPE=gcs
+# export BACKEND_GCS_BUCKET=

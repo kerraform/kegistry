@@ -29,6 +29,7 @@ type DriverType string
 
 const (
 	DriverTypeLocal DriverType = "local"
+	DriverTypeGCS   DriverType = "gcs"
 	DriverTypeS3    DriverType = "s3"
 )
 
@@ -51,7 +52,8 @@ type Driver interface {
 }
 
 type driverOpts struct {
-	S3 *S3Opts
+	GCS *GCSOpts
+	S3  *S3Opts
 }
 
 type DriverOpt func(opts *driverOpts)
@@ -66,17 +68,19 @@ func WithS3(s3Opts *S3Opts) DriverOpt {
 	}
 }
 
-func NewDriver(driverType DriverType, logger *zap.Logger, opts ...DriverOpt) (Driver, error) {
+func NewDriver(ctx context.Context, driverType DriverType, logger *zap.Logger, opts ...DriverOpt) (Driver, error) {
 	var o driverOpts
 	for _, f := range opts {
 		f(&o)
 	}
 
 	switch driverType {
-	case DriverTypeS3:
-		return newS3Driver(logger, o.S3)
 	case DriverTypeLocal:
 		return newLocalDriver(logger)
+	case DriverTypeGCS:
+		return newGCSDriver(ctx, logger, o.GCS)
+	case DriverTypeS3:
+		return newS3Driver(ctx, logger, o.S3)
 	default:
 		return nil, fmt.Errorf("no valid driver specified, got: %s", driverType)
 	}
