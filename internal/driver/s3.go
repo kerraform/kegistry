@@ -125,15 +125,15 @@ func (d *S3) CreateProviderVersion(ctx context.Context, namespace, registryName,
 }
 
 func (d *S3) GetPlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string) (io.ReadCloser, error) {
-	return nil, nil
+	return nil, ErrS3NotAllowed
 }
 
 func (d *S3) GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error) {
-	return nil, nil
+	return nil, ErrS3NotAllowed
 }
 
 func (d *S3) GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error) {
-	return nil, nil
+	return nil, ErrS3NotAllowed
 }
 
 func (d *S3) FindPackage(ctx context.Context, namespace, registryName, version, pos, arch string) (*model.Package, error) {
