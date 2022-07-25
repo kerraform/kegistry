@@ -32,7 +32,7 @@ const (
 type Driver interface {
 	CreateProvider(ctx context.Context, namespace, registryName string) error
 	CreateProviderPlatform(ctx context.Context, namespace, registryName, version, os, arch string) error
-	CreateProviderVersion(ctx context.Context, namespace, registryName, version string) error
+	CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error)
 	GetPlatformBinary(ctx context.Context, namespace, registryName, version, os, arch string) (io.ReadCloser, error)
 	GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
 	GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
@@ -77,4 +77,9 @@ func NewDriver(driverType DriverType, logger *zap.Logger, opts ...DriverOpt) (Dr
 	default:
 		return nil, fmt.Errorf("no valid driver specified, got: %s", driverType)
 	}
+}
+
+type CreateProviderVersionResult struct {
+	SHASumsUpload    string
+	SHASumsSigUpload string
 }

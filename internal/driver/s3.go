@@ -72,8 +72,31 @@ func (d *S3) CreateProviderPlatform(ctx context.Context, namespace, registryName
 	return nil
 }
 
-func (d *S3) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) error {
-	return nil
+func (d *S3) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error) {
+	versionRootPath := fmt.Sprintf("%s/%s/%s/versions/%s", providerRootPath, namespace, registryName, version)
+	psc := s3.NewPresignClient(d.s3)
+	sha256SumKeyUploadURL, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sha256SumSigKeyUploadURL, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	d.logger.Debug("created provider version path", zap.String("path", versionRootPath))
+
+	return &CreateProviderVersionResult{
+		SHASumsUpload:    sha256SumKeyUploadURL.URL,
+		SHASumsSigUpload: sha256SumSigKeyUploadURL.URL,
+	}, nil
 }
 
 func (d *S3) GetPlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string) (io.ReadCloser, error) {

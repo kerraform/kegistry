@@ -218,7 +218,8 @@ func (p *provider) CreateProviderVersion() http.Handler {
 			return err
 		}
 
-		if err := p.driver.CreateProviderVersion(r.Context(), namespace, registryName, req.Data.Attributes.Version); err != nil {
+		result, err := p.driver.CreateProviderVersion(r.Context(), namespace, registryName, req.Data.Attributes.Version)
+		if err != nil {
 			l.Error("failed to create provider version")
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
@@ -237,8 +238,8 @@ func (p *provider) CreateProviderVersion() http.Handler {
 			Data: &CreateProviderVersionResponseData{
 				Type: DataTypeRegistryProviderVersions,
 				Links: &CreateProviderVersionResponseDataLink{
-					SHASumsUpload:    fmt.Sprintf("/v1/providers/%s/%s/versions/%s/sigsums", namespace, registryName, req.Data.Attributes.Version),
-					SHASumsSigUpload: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, req.Data.Attributes.Version),
+					SHASumsUpload:    result.SHASumsUpload,
+					SHASumsSigUpload: result.SHASumsSigUpload,
 				},
 			},
 		}

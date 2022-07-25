@@ -55,13 +55,16 @@ func (d *local) CreateProviderPlatform(ctx context.Context, namespace, registryN
 	return nil
 }
 
-func (d *local) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) error {
+func (d *local) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error) {
 	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
 	if err := os.MkdirAll(versionRootPath, 0700); err != nil {
-		return err
+		return nil, err
 	}
 	d.logger.Debug("created version path", zap.String("path", versionRootPath))
-	return nil
+	return &CreateProviderVersionResult{
+		SHASumsUpload:    fmt.Sprintf("/v1/providers/%s/%s/versions/%s/sigsums", namespace, registryName, version),
+		SHASumsSigUpload: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
+	}, nil
 }
 
 func (d *local) GetPlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string) (io.ReadCloser, error) {
