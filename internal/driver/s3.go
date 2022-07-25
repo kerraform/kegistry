@@ -246,7 +246,7 @@ func (d *S3) FindPackage(ctx context.Context, namespace, registryName, version, 
 
 	wg.Go(func() error {
 		var err error
-		sha256SumSigKeyDownload, err = psc.PresignPutObject(ctx, &s3.PutObjectInput{
+		sha256SumSigKeyDownload, err = psc.PresignGetObject(ctx, &s3.GetObjectInput{
 			Bucket: aws.String(d.bucket),
 			Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)),
 		})
