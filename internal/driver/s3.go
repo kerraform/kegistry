@@ -36,10 +36,11 @@ type S3 struct {
 }
 
 type S3Opts struct {
-	AccessKey string
-	Bucket    string
-	Endpoint  string
-	SecretKey string
+	AccessKey    string
+	Bucket       string
+	Endpoint     string
+	SecretKey    string
+	UsePathStyle bool
 }
 
 type endpointResolver struct {
@@ -73,7 +74,9 @@ func newS3Driver(logger *zap.Logger, opts *S3Opts) (Driver, error) {
 	return &S3{
 		bucket: opts.Bucket,
 		logger: logger,
-		s3:     s3.NewFromConfig(cfg),
+		s3: s3.NewFromConfig(cfg, func(o *s3.Options) {
+			o.UsePathStyle = opts.UsePathStyle
+		}),
 	}, nil
 }
 
