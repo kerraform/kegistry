@@ -7,7 +7,7 @@
 > Terraform Registry fulfills Terraform provider and module registry protocol
 
 ![Test](https://github.com/kerraform/kegistry/workflows/CI/badge.svg)
-![Release](https://github.com/kerraform/kegistry/actions/workflows/release.yml)
+![Release](https://github.com/kerraform/kegistry/actions/workflows/release.yml/badge.svg)
 
 [![Dependabot Badge][Dependabot Icon]][Dependabot]
 [![GoDoc Badge][GoDoc Icon]][GoDoc]
