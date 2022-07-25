@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -156,22 +157,37 @@ func (d *S3) ListAvailableVersions(ctx context.Context, namespace, registryName 
 		zap.Int("count", len(resp.Contents)),
 	)
 
-	// vs := make([]model.AvailableVersion, len(resp.Contents))
-	for i, obj := range resp.Contents {
+	platforms := map[string][]model.AvailableVersionPlatform{}
+	for _, obj := range resp.Contents {
+		ext := filepath.Ext(*obj.Key)
+		if ext != ".zip" {
+			continue
+		}
+		result := platformBinaryRegex.FindStringSubmatch(*obj.Key)
 
-		fmt.Println(i, *obj.Key)
+		if len(result) != 4 {
+			continue
+		}
 
-		// input := &s3.ListObjectsV2Input{
-		// 	Bucket: aws.String(d.bucket),
-		// 	Prefix: fmt.Sprintf("%s/%s", ),
-		// }
+		version := result[1]
+		pos := result[2]
+		arch := result[3]
 
-		// vs[i] = model.AvailableVersion{
-		// 	Version: *obj.Key,
-		// }
+		platforms[version] = append(platforms[version], model.AvailableVersionPlatform{
+			OS:   pos,
+			Arch: arch,
+		})
 	}
 
-	return []model.AvailableVersion{}, nil
+	vs := []model.AvailableVersion{}
+	for k, versions := range platforms {
+		vs = append(vs, model.AvailableVersion{
+			Version:   k,
+			Platforms: versions,
+		})
+	}
+
+	return vs, nil
 }
 
 func (d *S3) SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error {

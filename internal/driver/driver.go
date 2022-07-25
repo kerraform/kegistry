@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 
 	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
@@ -14,6 +15,8 @@ var (
 	ErrProviderBinaryNotExist  = errors.New("provider binary not exist")
 	ErrProviderNotExist        = errors.New("provider not exist")
 	ErrProviderVersionNotExist = errors.New("provider version not exist")
+
+	platformBinaryRegex = regexp.MustCompile(`terraform-provider-(\w+)_([0-9]+.[0-9]+.[0-9]+)_(\w+)_(\w+).zip`)
 )
 
 const (
