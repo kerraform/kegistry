@@ -11,13 +11,18 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/armor"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -135,44 +140,121 @@ func (d *S3) FindPackage(ctx context.Context, namespace, registryName, version, 
 	platformPath := fmt.Sprintf("%s/%s/%s/versions/%s/%s-%s", providerRootPath, namespace, registryName, version, pos, arch)
 	filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", registryName, version, pos, arch)
 	filepath := fmt.Sprintf("%s/%s", platformPath, filename)
+	versionRootPath := fmt.Sprintf("%s/%s/%s/versions/%s", providerRootPath, namespace, registryName, version)
+	keysRootPath := fmt.Sprintf("%s/%s/%s", providerRootPath, namespace, keyDirname)
 
 	downloader := manager.NewDownloader(d.s3)
-
-	b := manager.NewWriteAtBuffer([]byte{})
-	_, err := downloader.Download(ctx, b, &s3.GetObjectInput{
-		Bucket: aws.String(d.bucket),
-		Key:    aws.String(filepath),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	versionRootPath := fmt.Sprintf("%s/%s/%s/versions/%s", providerRootPath, namespace, registryName, version)
-	sha256SumHex := sha256.Sum256(b.Bytes())
-	sha256Sum := hex.EncodeToString(sha256SumHex[:])
-
+	wg, ctx := errgroup.WithContext(ctx)
 	psc := s3.NewPresignClient(d.s3)
-	platformBinaryDownload, err := psc.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(d.bucket),
-		Key:    aws.String(filepath),
-	})
-	if err != nil {
-		return nil, err
-	}
+	var sha256Sum string
+	var platformBinaryDownload *v4.PresignedHTTPRequest
+	var sha256SumKeyDownload *v4.PresignedHTTPRequest
+	var sha256SumSigKeyDownload *v4.PresignedHTTPRequest
+	gpgKeys := []model.GPGPublicKey{}
 
-	sha256SumKeyDownload, err := psc.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(d.bucket),
-		Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)),
-	})
-	if err != nil {
-		return nil, err
-	}
+	wg.Go(func() error {
+		input := &s3.ListObjectsV2Input{
+			Bucket: aws.String(d.bucket),
+			Prefix: aws.String(keysRootPath),
+		}
 
-	sha256SumSigKeyDownload, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(d.bucket),
-		Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)),
+		resp, err := d.s3.ListObjectsV2(ctx, input)
+		if err != nil {
+			return err
+		}
+
+		d.logger.Debug("found keys",
+			zap.Int("count", len(resp.Contents)),
+			zap.String("path", keysRootPath),
+		)
+
+		for _, obj := range resp.Contents {
+			b := manager.NewWriteAtBuffer([]byte{})
+			_, err := downloader.Download(ctx, b, &s3.GetObjectInput{
+				Bucket: aws.String(d.bucket),
+				Key:    obj.Key,
+			})
+			if err != nil {
+				return err
+			}
+
+			bs := bytes.NewBuffer(b.Bytes())
+			block, err := armor.Decode(bs)
+			if err != nil {
+				return err
+			}
+
+			if block.Type != openpgp.PublicKeyType {
+				return fmt.Errorf("not public key type")
+			}
+
+			reader := packet.NewReader(block.Body)
+			pkt, err := reader.Next()
+			if err != nil {
+				return err
+			}
+
+			k, ok := pkt.(*packet.PublicKey)
+			if !ok {
+				return fmt.Errorf("not public key type")
+			}
+
+			gpgKey := model.GPGPublicKey{
+				KeyID:      k.KeyIdString(),
+				ASCIIArmor: string(b.Bytes()),
+			}
+			gpgKeys = append(gpgKeys, gpgKey)
+		}
+
+		return nil
 	})
-	if err != nil {
+
+	wg.Go(func() error {
+		b := manager.NewWriteAtBuffer([]byte{})
+		_, err := downloader.Download(ctx, b, &s3.GetObjectInput{
+			Bucket: aws.String(d.bucket),
+			Key:    aws.String(filepath),
+		})
+		if err != nil {
+			return err
+		}
+
+		sha256SumHex := sha256.Sum256(b.Bytes())
+		sha256Sum = hex.EncodeToString(sha256SumHex[:])
+		return nil
+	})
+
+	wg.Go(func() error {
+		var err error
+		platformBinaryDownload, err = psc.PresignGetObject(ctx, &s3.GetObjectInput{
+			Bucket: aws.String(d.bucket),
+			Key:    aws.String(filepath),
+		})
+
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		sha256SumKeyDownload, err = psc.PresignGetObject(ctx, &s3.GetObjectInput{
+			Bucket: aws.String(d.bucket),
+			Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)),
+		})
+
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		sha256SumSigKeyDownload, err = psc.PresignPutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(d.bucket),
+			Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)),
+		})
+
+		return err
+	})
+
+	if err := wg.Wait(); err != nil {
 		return nil, err
 	}
 
@@ -184,7 +266,9 @@ func (d *S3) FindPackage(ctx context.Context, namespace, registryName, version, 
 		SHASumsURL:    sha256SumKeyDownload.URL,
 		SHASumsSigURL: sha256SumSigKeyDownload.URL,
 		SHASum:        sha256Sum,
-		// SigningKeys:   signingKeys,
+		SigningKeys: &model.SigningKeys{
+			GPGPublicKeys: gpgKeys,
+		},
 	}
 
 	return pkg, nil
