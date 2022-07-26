@@ -14,19 +14,19 @@ const (
 )
 
 var (
-	v1ModulesPath   = fmt.Sprintf("%s/v1/modules", registryPath)
-	v1ProvidersPath = fmt.Sprintf("%s/v1/providers", registryPath)
+	v1ModulesPath   = "/v1/modules"
+	v1ProvidersPath = "/v1/providers"
 )
 
 func (s *Server) registerRegistryHandler() {
+	// Service discover
+	// See: https://www.terraform.io/internals/remote-service-discovery
+	s.mux.Methods(http.MethodGet).Path("/.well-known/terraform.json").Handler(s.ServiceDiscovery())
+
 	registry := s.mux.PathPrefix(registryPath).Subrouter()
 
 	registry.Use(middleware.AccessLog(s.logger))
 	registry.Use(middleware.AccessMetric(s.metric))
-
-	// Service discover
-	// See: https://www.terraform.io/internals/remote-service-discovery
-	registry.Methods(http.MethodGet).Path("/.well-known/terraform.json").Handler(s.ServiceDiscovery())
 
 	// Module Registry Protocol
 	// List Available Versions
