@@ -54,7 +54,7 @@ func (d *provider) CreateProviderVersion(ctx context.Context, namespace, registr
 	}
 	d.logger.Debug("created version path", zap.String("path", versionRootPath))
 	return &driver.CreateProviderVersionResult{
-		SHASumsUpload:    fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/sigsums", namespace, registryName, version),
+		SHASumsUpload:    fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
 		SHASumsSigUpload: fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
 	}, nil
 }
