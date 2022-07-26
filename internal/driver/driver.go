@@ -31,6 +31,9 @@ const (
 	DriverTypeS3    DriverType = "s3"
 )
 
+type Module interface {
+}
+
 type Provider interface {
 	CreateProvider(ctx context.Context, namespace, registryName string) error
 	CreateProviderPlatform(ctx context.Context, namespace, registryName, version, os, arch string) (*CreateProviderPlatformResult, error)
@@ -50,6 +53,7 @@ type Provider interface {
 }
 
 type Driver struct {
+	Module   Module
 	Provider Provider
 }
 

@@ -10,11 +10,16 @@ const (
 )
 
 func NewDriver(logger *zap.Logger) *driver.Driver {
+	module := &module{
+		logger: logger,
+	}
+
 	provider := &provider{
 		logger: logger,
 	}
 
 	return &driver.Driver{
+		Module:   module,
 		Provider: provider,
 	}
 }

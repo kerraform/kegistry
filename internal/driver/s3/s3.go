@@ -43,15 +43,24 @@ func NewDriver(logger *zap.Logger, opts *DriverOpts) (*driver.Driver, error) {
 		return nil, err
 	}
 
+	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = opts.UsePathStyle
+	})
+
+	module := &module{
+		bucket: opts.Bucket,
+		logger: logger,
+		s3:     s3Client,
+	}
+
 	provider := &provider{
 		bucket: opts.Bucket,
 		logger: logger,
-		s3: s3.NewFromConfig(cfg, func(o *s3.Options) {
-			o.UsePathStyle = opts.UsePathStyle
-		}),
+		s3:     s3Client,
 	}
 
 	return &driver.Driver{
+		Module:   module,
 		Provider: provider,
 	}, nil
 }
