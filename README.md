@@ -21,7 +21,10 @@
 
 These are the list of the supported features.
 
-* [Provider Registry Protocol](https://www.terraform.io/internals/provider-registry-protocol)
+* Module registry
+  * Supports [Module Registry Protocol](https://www.terraform.io/internals/module-registry-protocol) and almost all [Registry standard API](https://www.terraform.io/registry/api-docs)
+* Provider registry
+  * Supports [Provider Registry Protocol](https://www.terraform.io/internals/provider-registry-protocol) and [Terraform Cloud API](https://www.terraform.io/cloud-docs/api-docs/private-registry/providers) inspired APIs.
 * Access logs
 * Storage
   * Local disk
