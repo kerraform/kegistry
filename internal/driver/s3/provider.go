@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/kerraform/kegistry/internal/driver"
-	"github.com/kerraform/kegistry/internal/model"
+	model "github.com/kerraform/kegistry/internal/model/provider"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"

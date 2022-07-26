@@ -30,12 +30,16 @@ func (s *Server) registerRegistryHandler() {
 
 	// Module Registry Protocol
 	// List Available Versions
-	// https://www.terraform.io/internals/module-registry-protocol#list-available-versions-for-a-specific-module
+	// https://www.terraform.io/registry/api-docs#list-available-versions-for-a-specific-module
 	registry.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{name}/{provider}/versions", v1ModulesPath)).Handler(s.v1.Module.ListAvailableVersions())
 
 	// Download source code
 	// https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
-	registry.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{name}/{system}/{version}/download", v1ModulesPath)).Handler(s.v1.Provider.FindPackage())
+	registry.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{name}/{system}/{version}/download", v1ModulesPath)).Handler(s.v1.Module.FindSourceCode())
+
+	// Download source code
+	// https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
+	registry.Methods(http.MethodGet).Path(fmt.Sprintf("%s/{namespace}/{name}/{system}/{version}/download", v1ModulesPath)).Handler(s.v1.Module.Download())
 
 	// Provider Registry Protocol
 	// List Available Versions

@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
-	"github.com/kerraform/kegistry/internal/model"
+	model "github.com/kerraform/kegistry/internal/model/provider"
 	"go.uber.org/zap"
 )
 

@@ -6,7 +6,7 @@ import (
 	"io"
 	"regexp"
 
-	"github.com/kerraform/kegistry/internal/model"
+	"github.com/kerraform/kegistry/internal/model/provider"
 )
 
 var (
@@ -32,17 +32,20 @@ const (
 )
 
 type Module interface {
+	GetDownloadURL(ctx context.Context, namespace, provider, name, version string) error
+	GetModule(ctx context.Context, namespace, provider, name, version string) error
+	ListAvailableVersions(ctx context.Context, namespace, provider, name string) error
 }
 
 type Provider interface {
 	CreateProvider(ctx context.Context, namespace, registryName string) error
 	CreateProviderPlatform(ctx context.Context, namespace, registryName, version, os, arch string) (*CreateProviderPlatformResult, error)
 	CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error)
-	FindPackage(ctx context.Context, namespace, registryName, version, os, arch string) (*model.Package, error)
+	FindPackage(ctx context.Context, namespace, registryName, version, os, arch string) (*provider.Package, error)
 	GetPlatformBinary(ctx context.Context, namespace, registryName, version, os, arch string) (io.ReadCloser, error)
 	GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
 	GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
-	ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]model.AvailableVersion, error)
+	ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]provider.AvailableVersion, error)
 	IsProviderCreated(ctx context.Context, namespace, registryName string) error
 	IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error
 	SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error

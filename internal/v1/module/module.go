@@ -12,6 +12,7 @@ import (
 
 type Module interface {
 	Download() http.Handler
+	FindSourceCode() http.Handler
 	ListAvailableVersions() http.Handler
 }
 
@@ -34,7 +35,15 @@ func New(cfg *Config) Module {
 	}
 }
 
-// https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
+// https://www.terraform.io/registry/api-docs#download-source-code-for-a-specific-module-version
+func (m *module) FindSourceCode() http.Handler {
+	return handler.NewHandler(m.logger, func(w http.ResponseWriter, _ *http.Request) error {
+		w.WriteHeader(http.StatusNoContent)
+		w.Header().Set("X-Terraform-Get", "")
+		return nil
+	})
+}
+
 func (m *module) Download() http.Handler {
 	return handler.NewHandler(m.logger, func(w http.ResponseWriter, _ *http.Request) error {
 		w.WriteHeader(http.StatusNoContent)

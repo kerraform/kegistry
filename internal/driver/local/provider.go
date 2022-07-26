@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/kerraform/kegistry/internal/driver"
-	"github.com/kerraform/kegistry/internal/model"
+	model "github.com/kerraform/kegistry/internal/model/provider"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
