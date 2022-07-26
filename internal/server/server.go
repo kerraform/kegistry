@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/kerraform/kegistry/internal/driver"
-	"github.com/kerraform/kegistry/internal/middleware"
+	"github.com/kerraform/kegistry/internal/metric"
 	v1 "github.com/kerraform/kegistry/internal/v1"
 
 	"github.com/gorilla/mux"
@@ -17,6 +17,7 @@ import (
 type Server struct {
 	driver driver.Driver
 	logger *zap.Logger
+	metric *metric.RegistryMetrics
 	mux    *mux.Router
 	server *http.Server
 
@@ -26,20 +27,24 @@ type Server struct {
 type ServerConfig struct {
 	Driver driver.Driver
 	Logger *zap.Logger
-
-	V1 *v1.Handler
+	Metric *metric.RegistryMetrics
+	V1     *v1.Handler
 }
 
 func NewServer(cfg *ServerConfig) *Server {
 	s := &Server{
 		driver: cfg.Driver,
 		logger: cfg.Logger,
+		metric: cfg.Metric,
 		mux:    mux.NewRouter(),
 		v1:     cfg.V1,
 	}
 
+	s.metric.RegisterAllMetrics()
+
 	s.registerRegistryHandler()
 	s.registerUtilHandler()
+	s.registerMetricsHandler()
 
 	return s
 }
@@ -49,9 +54,10 @@ func (s *Server) Serve(ctx context.Context, conn net.Listener) error {
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
-		Handler:      middleware.Audit(s.logger)(s.mux),
+		Handler:      s.mux,
 	}
 
+	s.metric.Resync(ctx)
 	s.server = server
 	if err := server.Serve(conn); err != nil && err != http.ErrServerClosed {
 		return err

@@ -53,7 +53,7 @@ func (d *local) CreateProviderPlatform(ctx context.Context, namespace, registryN
 	}
 	d.logger.Debug("created platform path", zap.String("path", platformRootPath))
 	return &CreateProviderPlatformResult{
-		ProviderBinaryUploads: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/%s/%s/binary", namespace, registryName, version, pos, arch),
+		ProviderBinaryUploads: fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/%s/%s/binary", namespace, registryName, version, pos, arch),
 	}, nil
 }
 
@@ -64,8 +64,8 @@ func (d *local) CreateProviderVersion(ctx context.Context, namespace, registryNa
 	}
 	d.logger.Debug("created version path", zap.String("path", versionRootPath))
 	return &CreateProviderVersionResult{
-		SHASumsUpload:    fmt.Sprintf("/v1/providers/%s/%s/versions/%s/sigsums", namespace, registryName, version),
-		SHASumsSigUpload: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
+		SHASumsUpload:    fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/sigsums", namespace, registryName, version),
+		SHASumsSigUpload: fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
 	}, nil
 }
 
@@ -171,9 +171,9 @@ func (d *local) FindPackage(ctx context.Context, namespace, registryName, versio
 		OS:            pos,
 		Arch:          arch,
 		Filename:      filename,
-		DownloadURL:   fmt.Sprintf("/v1/providers/%s/%s/versions/%s/%s/%s/binary", namespace, registryName, version, pos, arch),
-		SHASumsURL:    fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
-		SHASumsSigURL: fmt.Sprintf("/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
+		DownloadURL:   fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/%s/%s/binary", namespace, registryName, version, pos, arch),
+		SHASumsURL:    fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/shasums", namespace, registryName, version),
+		SHASumsSigURL: fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
 		SHASum:        sha256Sum,
 		SigningKeys:   signingKeys,
 	}
