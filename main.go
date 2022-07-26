@@ -10,6 +10,8 @@ import (
 
 	"github.com/kerraform/kegistry/internal/config"
 	"github.com/kerraform/kegistry/internal/driver"
+	"github.com/kerraform/kegistry/internal/driver/local"
+	"github.com/kerraform/kegistry/internal/driver/s3"
 	"github.com/kerraform/kegistry/internal/logging"
 	"github.com/kerraform/kegistry/internal/metric"
 	"github.com/kerraform/kegistry/internal/server"
@@ -54,35 +56,33 @@ func run(args []string) error {
 
 	logger.Info("setup backend", zap.String("backend", cfg.Backend.Type))
 
-	var opts []driver.DriverOpt
-
+	var d *driver.Driver
 	switch driver.DriverType(cfg.Backend.Type) {
 	case driver.DriverTypeS3:
-		opts = append(opts, driver.WithS3(&driver.S3Opts{
+		d, err = s3.NewDriver(logger, &s3.DriverOpts{
 			AccessKey:    cfg.Backend.S3.AccessKey,
 			Bucket:       cfg.Backend.S3.Bucket,
 			Endpoint:     cfg.Backend.S3.Endpoint,
 			SecretKey:    cfg.Backend.S3.SecretKey,
 			UsePathStyle: cfg.Backend.S3.UsePathStyle,
-		}))
-	}
+		})
 
-	driver, err := driver.NewDriver(driver.DriverType(cfg.Backend.Type), logger, opts...)
-	if err != nil {
 		return err
+	case driver.DriverTypeLocal:
+		d = local.NewDriver(logger)
 	}
 
-	metrics := metric.New(logger, driver)
+	metrics := metric.New(logger, d)
 
 	wg, ctx := errgroup.WithContext(ctx)
 
 	v1 := v1.New(&v1.HandlerConfig{
-		Driver: driver,
+		Driver: d,
 		Logger: logger,
 	})
 
 	svr := server.NewServer(&server.ServerConfig{
-		Driver: driver,
+		Driver: d,
 		Logger: logger,
 		Metric: metrics,
 		V1:     v1,

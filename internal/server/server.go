@@ -15,7 +15,7 @@ import (
 )
 
 type Server struct {
-	driver driver.Driver
+	driver *driver.Driver
 	logger *zap.Logger
 	metric *metric.RegistryMetrics
 	mux    *mux.Router
@@ -25,7 +25,7 @@ type Server struct {
 }
 
 type ServerConfig struct {
-	Driver driver.Driver
+	Driver *driver.Driver
 	Logger *zap.Logger
 	Metric *metric.RegistryMetrics
 	V1     *v1.Handler

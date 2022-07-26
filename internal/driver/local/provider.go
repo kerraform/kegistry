@@ -1,4 +1,4 @@
-package driver
+package local
 
 import (
 	"bytes"
@@ -13,32 +13,22 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/ProtonMail/go-crypto/openpgp/armor"
-	"github.com/ProtonMail/go-crypto/openpgp/packet"
+	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/model"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
+	"golang.org/x/crypto/openpgp/packet"
 )
 
-const (
-	localRootPath           = "/tmp"
-	versionMetadataFilename = "metadata.json"
-)
-
-type local struct {
+type provider struct {
 	logger *zap.Logger
 }
 
-var _ Driver = (*local)(nil)
+var _ driver.Provider = (*provider)(nil)
 
-func newLocalDriver(logger *zap.Logger) (Driver, error) {
-	return &local{
-		logger: logger,
-	}, nil
-}
-
-func (d *local) CreateProvider(ctx context.Context, namespace, registryName string) error {
-	registryRootPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, registryName)
+func (d *provider) CreateProvider(ctx context.Context, namespace, registryName string) error {
+	registryRootPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, driver.ProviderRootPath, namespace, registryName)
 	if err := os.MkdirAll(registryRootPath, 0700); err != nil {
 		return err
 	}
@@ -46,55 +36,55 @@ func (d *local) CreateProvider(ctx context.Context, namespace, registryName stri
 	return nil
 }
 
-func (d *local) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, pos, arch string) (*CreateProviderPlatformResult, error) {
-	platformRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
+func (d *provider) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, pos, arch string) (*driver.CreateProviderPlatformResult, error) {
+	platformRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, driver.ProviderRootPath, namespace, registryName, version, pos, arch)
 	if err := os.MkdirAll(platformRootPath, 0700); err != nil {
 		return nil, err
 	}
 	d.logger.Debug("created platform path", zap.String("path", platformRootPath))
-	return &CreateProviderPlatformResult{
+	return &driver.CreateProviderPlatformResult{
 		ProviderBinaryUploads: fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/%s/%s/binary", namespace, registryName, version, pos, arch),
 	}, nil
 }
 
-func (d *local) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error) {
-	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
+func (d *provider) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*driver.CreateProviderVersionResult, error) {
+	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, driver.ProviderRootPath, namespace, registryName, version)
 	if err := os.MkdirAll(versionRootPath, 0700); err != nil {
 		return nil, err
 	}
 	d.logger.Debug("created version path", zap.String("path", versionRootPath))
-	return &CreateProviderVersionResult{
+	return &driver.CreateProviderVersionResult{
 		SHASumsUpload:    fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/sigsums", namespace, registryName, version),
 		SHASumsSigUpload: fmt.Sprintf("/registry/v1/providers/%s/%s/versions/%s/shasums-sig", namespace, registryName, version),
 	}, nil
 }
 
-func (d *local) GetPlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string) (io.ReadCloser, error) {
-	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
+func (d *provider) GetPlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string) (io.ReadCloser, error) {
+	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, driver.ProviderRootPath, namespace, registryName, version, pos, arch)
 	filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", registryName, version, pos, arch)
 	filepath := fmt.Sprintf("%s/%s", platformPath, filename)
 	return os.Open(filepath)
 }
 
-func (d *local) GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error) {
-	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/terraform-provider-%s_%s_SHA256SUMS", localRootPath, providerRootPath, namespace, registryName, version, registryName, version)
+func (d *provider) GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error) {
+	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/terraform-provider-%s_%s_SHA256SUMS", localRootPath, driver.ProviderRootPath, namespace, registryName, version, registryName, version)
 	return os.Open(filepath)
 }
 
-func (d *local) GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error) {
-	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/terraform-provider-%s_%s_SHA256SUMS.sig", localRootPath, providerRootPath, namespace, registryName, version, registryName, version)
+func (d *provider) GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error) {
+	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/terraform-provider-%s_%s_SHA256SUMS.sig", localRootPath, driver.ProviderRootPath, namespace, registryName, version, registryName, version)
 	return os.Open(filepath)
 }
 
-func (d *local) FindPackage(ctx context.Context, namespace, registryName, version, pos, arch string) (*model.Package, error) {
-	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
+func (d *provider) FindPackage(ctx context.Context, namespace, registryName, version, pos, arch string) (*model.Package, error) {
+	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, driver.ProviderRootPath, namespace, registryName, version, pos, arch)
 	filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", registryName, version, pos, arch)
 	filepath := fmt.Sprintf("%s/%s", platformPath, filename)
 
 	if _, err := os.Stat(filepath); err != nil {
 		if os.IsNotExist(err) {
 			d.logger.Error("file not exist", zap.String("filepath", filepath))
-			return nil, ErrProviderBinaryNotExist
+			return nil, driver.ErrProviderBinaryNotExist
 		}
 
 		return nil, err
@@ -109,7 +99,7 @@ func (d *local) FindPackage(ctx context.Context, namespace, registryName, versio
 	sha256Sum := hex.EncodeToString(sha256SumHex[:])
 	d.logger.Debug("generated sha256sum for file", zap.String("sha256sum", sha256Sum))
 
-	keysPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, keyDirname)
+	keysPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, driver.ProviderRootPath, namespace, driver.KeyDirname)
 	keys, err := ioutil.ReadDir(keysPath)
 	if err != nil {
 		return nil, err
@@ -181,12 +171,12 @@ func (d *local) FindPackage(ctx context.Context, namespace, registryName, versio
 	return pkg, nil
 }
 
-func (d *local) IsProviderCreated(ctx context.Context, namespace, registryName string) error {
-	registryRootPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, registryName)
+func (d *provider) IsProviderCreated(ctx context.Context, namespace, registryName string) error {
+	registryRootPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, driver.ProviderRootPath, namespace, registryName)
 	d.logger.Debug("checking provider", zap.String("path", registryRootPath))
 	if _, err := os.Stat(registryRootPath); err != nil {
 		if os.IsNotExist(err) {
-			return ErrProviderNotExist
+			return driver.ErrProviderNotExist
 		}
 
 		return err
@@ -195,12 +185,12 @@ func (d *local) IsProviderCreated(ctx context.Context, namespace, registryName s
 	return nil
 }
 
-func (d *local) IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error {
-	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
+func (d *provider) IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error {
+	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, driver.ProviderRootPath, namespace, registryName, version)
 	d.logger.Debug("checking provider version", zap.String("path", versionRootPath))
 	if _, err := os.Stat(versionRootPath); err != nil {
 		if os.IsNotExist(err) {
-			return ErrProviderNotExist
+			return driver.ErrProviderNotExist
 		}
 
 		return err
@@ -209,8 +199,8 @@ func (d *local) IsProviderVersionCreated(ctx context.Context, namespace, registr
 	return nil
 }
 
-func (d *local) ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]model.AvailableVersion, error) {
-	versionsRootPath := fmt.Sprintf("%s/%s/%s/%s/versions", localRootPath, providerRootPath, namespace, registryName)
+func (d *provider) ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]model.AvailableVersion, error) {
+	versionsRootPath := fmt.Sprintf("%s/%s/%s/%s/versions", localRootPath, driver.ProviderRootPath, namespace, registryName)
 	versions, err := ioutil.ReadDir(versionsRootPath)
 	if err != nil {
 		return nil, err
@@ -260,8 +250,8 @@ func (d *local) ListAvailableVersions(ctx context.Context, namespace, registryNa
 	return vs, nil
 }
 
-func (d *local) SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error {
-	keyRootPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, providerRootPath, namespace, keyDirname)
+func (d *provider) SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error {
+	keyRootPath := fmt.Sprintf("%s/%s/%s/%s", localRootPath, driver.ProviderRootPath, namespace, driver.KeyDirname)
 	if err := os.MkdirAll(keyRootPath, 0700); err != nil {
 		return err
 	}
@@ -280,8 +270,8 @@ func (d *local) SaveGPGKey(ctx context.Context, namespace, keyID string, key []b
 	return nil
 }
 
-func (d *local) SavePlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string, body io.Reader) error {
-	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, providerRootPath, namespace, registryName, version, pos, arch)
+func (d *provider) SavePlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string, body io.Reader) error {
+	platformPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s-%s", localRootPath, driver.ProviderRootPath, namespace, registryName, version, pos, arch)
 	if err := d.IsProviderVersionCreated(ctx, namespace, registryName, version); err != nil {
 		return err
 	}
@@ -299,8 +289,8 @@ func (d *local) SavePlatformBinary(ctx context.Context, namespace, registryName,
 	return err
 }
 
-func (d *local) SaveSHASUMs(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
-	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
+func (d *provider) SaveSHASUMs(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
+	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, driver.ProviderRootPath, namespace, registryName, version)
 	if err := d.IsProviderVersionCreated(ctx, namespace, registryName, version); err != nil {
 		return err
 	}
@@ -318,8 +308,8 @@ func (d *local) SaveSHASUMs(ctx context.Context, namespace, registryName, versio
 	return err
 }
 
-func (d *local) SaveSHASUMsSig(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
-	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, providerRootPath, namespace, registryName, version)
+func (d *provider) SaveSHASUMsSig(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
+	versionRootPath := fmt.Sprintf("%s/%s/%s/%s/versions/%s", localRootPath, driver.ProviderRootPath, namespace, registryName, version)
 	if err := d.IsProviderVersionCreated(ctx, namespace, registryName, version); err != nil {
 		return err
 	}
@@ -337,15 +327,15 @@ func (d *local) SaveSHASUMsSig(ctx context.Context, namespace, registryName, ver
 	return err
 }
 
-func (d *local) SaveVersionMetadata(ctx context.Context, namespace, registryName, version, keyID string) error {
-	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s", localRootPath, providerRootPath, namespace, registryName, version, versionMetadataFilename)
+func (d *provider) SaveVersionMetadata(ctx context.Context, namespace, registryName, version, keyID string) error {
+	filepath := fmt.Sprintf("%s/%s/%s/%s/versions/%s/%s", localRootPath, driver.ProviderRootPath, namespace, registryName, version, driver.VersionMetadataFilename)
 	f, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 
 	b := new(bytes.Buffer)
-	metadata := &ProviderVersionMetadata{
+	metadata := &driver.ProviderVersionMetadata{
 		KeyID: keyID,
 	}
 

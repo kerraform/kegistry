@@ -18,14 +18,14 @@ import (
 
 type Handler struct {
 	logger *zap.Logger
-	driver driver.Driver
+	driver *driver.Driver
 
 	Module   module.Module
 	Provider provider.Provider
 }
 
 type HandlerConfig struct {
-	Driver driver.Driver
+	Driver *driver.Driver
 	Logger *zap.Logger
 }
 
@@ -111,7 +111,7 @@ func (h *Handler) AddGPGKey() http.Handler {
 			zap.String("keyID", pgpKey.KeyIdString()),
 		)
 
-		if err := h.driver.SaveGPGKey(r.Context(), req.Data.Attributes.Namespace, pgpKey.KeyIdString(), []byte(req.Data.Attributes.ASCIIArmor)); err != nil {
+		if err := h.driver.Provider.SaveGPGKey(r.Context(), req.Data.Attributes.Namespace, pgpKey.KeyIdString(), []byte(req.Data.Attributes.ASCIIArmor)); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}

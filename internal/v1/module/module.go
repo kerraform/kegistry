@@ -16,14 +16,14 @@ type Module interface {
 }
 
 type module struct {
-	driver driver.Driver
+	driver *driver.Driver
 	logger *zap.Logger
 }
 
 var _ Module = (*module)(nil)
 
 type Config struct {
-	Driver driver.Driver
+	Driver *driver.Driver
 	Logger *zap.Logger
 }
 
