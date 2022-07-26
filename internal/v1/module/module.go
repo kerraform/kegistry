@@ -34,9 +34,11 @@ func New(cfg *Config) Module {
 	}
 }
 
+// https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
 func (m *module) Download() http.Handler {
 	return handler.NewHandler(m.logger, func(w http.ResponseWriter, _ *http.Request) error {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
+		w.Header().Set("X-Terraform-Get", "")
 		return nil
 	})
 }
@@ -53,6 +55,7 @@ type ListAvailableVersionsModelVersion struct {
 	Version string `json:"version"`
 }
 
+// https://www.terraform.io/internals/module-registry-protocol#list-available-versions-for-a-specific-module
 func (m *module) ListAvailableVersions() http.Handler {
 	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
@@ -65,10 +68,9 @@ func (m *module) ListAvailableVersions() http.Handler {
 			zap.String("system", system),
 		)
 
-		versions, err := 
-
+		resp := &ListAvailableVersionsResponse{}
 		l.Info("list available module versions")
 		w.WriteHeader(http.StatusOK)
-		return json.NewEncoder(w).Encode()
+		return json.NewEncoder(w).Encode(resp)
 	})
 }
