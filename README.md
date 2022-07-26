@@ -28,6 +28,8 @@ These are the list of the supported features.
   * Amazon S3 (or S3 compatible object storage)
     * Tested S3 compatible object storage
       * [MinIO](https://min.io/)
+* Monitoring
+  * Prometheus
 
 ## Configuration
 

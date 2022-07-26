@@ -11,6 +11,7 @@ import (
 	"github.com/kerraform/kegistry/internal/config"
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/logging"
+	"github.com/kerraform/kegistry/internal/metric"
 	"github.com/kerraform/kegistry/internal/server"
 	v1 "github.com/kerraform/kegistry/internal/v1"
 	"github.com/kerraform/kegistry/internal/version"
@@ -66,10 +67,12 @@ func run(args []string) error {
 		}))
 	}
 
-	driver, err := driver.NewDriver(driver.DriverType(cfg.Backend.Type), logger.Named("driver"), opts...)
+	driver, err := driver.NewDriver(driver.DriverType(cfg.Backend.Type), logger, opts...)
 	if err != nil {
 		return err
 	}
+
+	metrics := metric.New(logger, driver)
 
 	wg, ctx := errgroup.WithContext(ctx)
 
@@ -81,6 +84,7 @@ func run(args []string) error {
 	svr := server.NewServer(&server.ServerConfig{
 		Driver: driver,
 		Logger: logger,
+		Metric: metrics,
 		V1:     v1,
 	})
 
