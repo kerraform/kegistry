@@ -67,9 +67,13 @@ func run(args []string) error {
 			UsePathStyle: cfg.Backend.S3.UsePathStyle,
 		})
 
-		return err
+		if err != nil {
+			return err
+		}
 	case driver.DriverTypeLocal:
 		d = local.NewDriver(logger)
+	default:
+		return fmt.Errorf("backend type %s not supported", cfg.Backend.Type)
 	}
 
 	metrics := metric.New(logger, d)
