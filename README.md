@@ -22,12 +22,14 @@
 These are the list of the supported features.
 
 * [Provider Registry Protocol](https://www.terraform.io/internals/provider-registry-protocol)
-* Audit logs
+* Access logs
 * Storage
   * Local disk
   * Amazon S3 (or S3 compatible object storage)
     * Tested S3 compatible object storage
       * [MinIO](https://min.io/)
+* Monitoring
+  * Prometheus
 
 ## Configuration
 

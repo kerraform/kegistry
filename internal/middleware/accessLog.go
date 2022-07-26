@@ -41,7 +41,7 @@ func (r *rwWrapper) WriteHeader(statusCode int) {
 	r.mirror.StatusCode = statusCode
 }
 
-func Audit(logger *zap.Logger) func(http.Handler) http.Handler {
+func AccessLog(logger *zap.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			res := &http.Response{}

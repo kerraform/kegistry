@@ -36,9 +36,11 @@ type Driver interface {
 	CreateProvider(ctx context.Context, namespace, registryName string) error
 	CreateProviderPlatform(ctx context.Context, namespace, registryName, version, os, arch string) (*CreateProviderPlatformResult, error)
 	CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error)
+	FindPackage(ctx context.Context, namespace, registryName, version, os, arch string) (*model.Package, error)
 	GetPlatformBinary(ctx context.Context, namespace, registryName, version, os, arch string) (io.ReadCloser, error)
 	GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
 	GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
+	ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]model.AvailableVersion, error)
 	IsProviderCreated(ctx context.Context, namespace, registryName string) error
 	IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error
 	SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error
@@ -46,8 +48,6 @@ type Driver interface {
 	SaveSHASUMs(ctx context.Context, namespace, registryName, version string, body io.Reader) error
 	SaveSHASUMsSig(ctx context.Context, namespace, registryName, version string, body io.Reader) error
 	SaveVersionMetadata(ctx context.Context, namespace, registryName, version, keyID string) error
-	ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]model.AvailableVersion, error)
-	FindPackage(ctx context.Context, namespace, registryName, version, os, arch string) (*model.Package, error)
 }
 
 type driverOpts struct {
@@ -71,6 +71,8 @@ func NewDriver(driverType DriverType, logger *zap.Logger, opts ...DriverOpt) (Dr
 	for _, f := range opts {
 		f(&o)
 	}
+
+	logger = logger.Named("driver")
 
 	switch driverType {
 	case DriverTypeS3:
