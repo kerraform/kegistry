@@ -15,6 +15,5 @@ func NewCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(version.NewCmd())
-
 	return cmd
 }

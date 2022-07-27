@@ -278,8 +278,6 @@ func (m *Module) UploadModuleVersion() http.Handler {
 			zap.String("version", version),
 		)
 
-		l.Info("hhhhhhh")
-
 		if err := m.driver.Module.SavePackage(r.Context(), namespace, provider, name, version, r.Body); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return err

@@ -17,13 +17,11 @@ var (
 	}
 )
 
-func init() {
+func Execute() error {
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(module.NewCmd())
 	rootCmd.AddCommand(provider.NewCmd())
-}
 
-func Execute() error {
 	return rootCmd.Execute()
 }
 
