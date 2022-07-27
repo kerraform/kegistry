@@ -21,7 +21,6 @@ type HandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
 // ServeHTTP Implements the http.Handler
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	err := h.HandleFunc(w, r)
 	if err == nil {
 		return
@@ -31,7 +30,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Message: err.Error(),
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	if err := json.NewEncoder(w).Encode(e); err != nil {
 		h.logger.Error("error to response", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)

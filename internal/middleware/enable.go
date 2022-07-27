@@ -27,7 +27,6 @@ func Enable(rType RegistryType, enabled bool) func(http.Handler) http.Handler {
 				Message: fmt.Sprintf("%s not enabled", rType),
 			}
 
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusBadRequest)
 			if err := json.NewEncoder(w).Encode(e); err != nil {
 				w.WriteHeader(http.StatusInternalServerError)

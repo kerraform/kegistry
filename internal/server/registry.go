@@ -18,10 +18,12 @@ var (
 )
 
 func (s *Server) registerRegistryHandler() {
-	// Service discover
-	// See: https://www.terraform.io/internals/remote-service-discovery
+	s.mux.Use(middleware.JSON())
 	s.mux.Use(middleware.AccessLog(s.logger))
 	s.mux.Use(middleware.AccessMetric(s.metric))
+
+	// Service discover
+	// See: https://www.terraform.io/internals/remote-service-discovery
 	s.mux.Methods(http.MethodGet).Path("/.well-known/terraform.json").Handler(s.ServiceDiscovery())
 
 	registry := s.mux.PathPrefix(registryPath).Subrouter()
