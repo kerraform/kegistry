@@ -20,12 +20,11 @@ var (
 func (s *Server) registerRegistryHandler() {
 	// Service discover
 	// See: https://www.terraform.io/internals/remote-service-discovery
+	s.mux.Use(middleware.AccessLog(s.logger))
+	s.mux.Use(middleware.AccessMetric(s.metric))
 	s.mux.Methods(http.MethodGet).Path("/.well-known/terraform.json").Handler(s.ServiceDiscovery())
 
 	registry := s.mux.PathPrefix(registryPath).Subrouter()
-
-	registry.Use(middleware.AccessLog(s.logger))
-	registry.Use(middleware.AccessMetric(s.metric))
 
 	module := registry.PathPrefix(v1ModulesPath).Subrouter()
 	module.Use(middleware.Enable(middleware.ModuleRegistryType, s.enableModule))
