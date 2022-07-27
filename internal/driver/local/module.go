@@ -17,7 +17,7 @@ type module struct {
 var _ driver.Module = (*module)(nil)
 
 func (d *module) GetDownloadURL(ctx context.Context, namespace, provider, name, version string) (string, error) {
-	return fmt.Sprintf("/registry/v1/modules/%s/%s/%s/%s/package", namespace, provider, name, version), nil
+	return fmt.Sprintf("/registry/v1/modules/%s/%s/%s/%s/terraform-%s-%s-%v.tar.gz", namespace, provider, name, version, provider, name, version), nil
 }
 
 func (d *module) GetModule(ctx context.Context, namespace, provider, name, version string) (*os.File, error) {
