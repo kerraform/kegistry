@@ -3,26 +3,30 @@ package driver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
+	"os"
 	"regexp"
 
-	"github.com/kerraform/kegistry/internal/model"
-	"go.uber.org/zap"
+	"github.com/kerraform/kegistry/internal/model/provider"
 )
 
 var (
+	// Module
+	ErrModuleNotExist = errors.New("module not exist")
+
+	// Provider
 	ErrProviderBinaryNotExist  = errors.New("provider binary not exist")
 	ErrProviderNotExist        = errors.New("provider not exist")
 	ErrProviderVersionNotExist = errors.New("provider version not exist")
 
-	platformBinaryRegex = regexp.MustCompile(`terraform-provider-(\w+)_([0-9]+.[0-9]+.[0-9]+)_(\w+)_(\w+).zip`)
+	PlatformBinaryRegex = regexp.MustCompile(`terraform-provider-(\w+)_([0-9]+.[0-9]+.[0-9]+)_(\w+)_(\w+).zip`)
 )
 
 const (
-	keyDirname       = "keys"
-	moduleRootPath   = "modules"
-	providerRootPath = "providers"
+	KeyDirname              = "keys"
+	ModuleRootPath          = "modules"
+	ProviderRootPath        = "providers"
+	VersionMetadataFilename = "metadata.json"
 )
 
 type DriverType string
@@ -32,15 +36,24 @@ const (
 	DriverTypeS3    DriverType = "s3"
 )
 
-type Driver interface {
+type Module interface {
+	CreateModule(ctx context.Context, namespace, provider, name string) error
+	CreateVersion(ctx context.Context, namespace, provider, name, version string) (*CreateModuleVersionResult, error)
+	GetDownloadURL(ctx context.Context, namespace, provider, name, version string) (string, error)
+	GetModule(ctx context.Context, namespace, provider, name, version string) (*os.File, error)
+	ListAvailableVersions(ctx context.Context, namespace, provider, name string) ([]string, error)
+	SavePackage(ctx context.Context, namespace, provider, name, version string, body io.Reader) error
+}
+
+type Provider interface {
 	CreateProvider(ctx context.Context, namespace, registryName string) error
 	CreateProviderPlatform(ctx context.Context, namespace, registryName, version, os, arch string) (*CreateProviderPlatformResult, error)
 	CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*CreateProviderVersionResult, error)
-	FindPackage(ctx context.Context, namespace, registryName, version, os, arch string) (*model.Package, error)
+	FindPackage(ctx context.Context, namespace, registryName, version, os, arch string) (*provider.Package, error)
 	GetPlatformBinary(ctx context.Context, namespace, registryName, version, os, arch string) (io.ReadCloser, error)
 	GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
 	GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
-	ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]model.AvailableVersion, error)
+	ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]provider.AvailableVersion, error)
 	IsProviderCreated(ctx context.Context, namespace, registryName string) error
 	IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error
 	SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error
@@ -50,38 +63,17 @@ type Driver interface {
 	SaveVersionMetadata(ctx context.Context, namespace, registryName, version, keyID string) error
 }
 
-type driverOpts struct {
-	S3 *S3Opts
+type Driver struct {
+	Module   Module
+	Provider Provider
 }
 
-type DriverOpt func(opts *driverOpts)
+type CreateModuleVersionResult struct {
+	Upload string
+}
 
 type ProviderVersionMetadata struct {
 	KeyID string `json:"key-id"`
-}
-
-func WithS3(s3Opts *S3Opts) DriverOpt {
-	return func(opts *driverOpts) {
-		opts.S3 = s3Opts
-	}
-}
-
-func NewDriver(driverType DriverType, logger *zap.Logger, opts ...DriverOpt) (Driver, error) {
-	var o driverOpts
-	for _, f := range opts {
-		f(&o)
-	}
-
-	logger = logger.Named("driver")
-
-	switch driverType {
-	case DriverTypeS3:
-		return newS3Driver(logger, o.S3)
-	case DriverTypeLocal:
-		return newLocalDriver(logger)
-	default:
-		return nil, fmt.Errorf("no valid driver specified, got: %s", driverType)
-	}
 }
 
 type CreateProviderVersionResult struct {

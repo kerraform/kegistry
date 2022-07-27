@@ -21,7 +21,10 @@
 
 These are the list of the supported features.
 
-* [Provider Registry Protocol](https://www.terraform.io/internals/provider-registry-protocol)
+* Module registry
+  * Supports [Module Registry Protocol](https://www.terraform.io/internals/module-registry-protocol) and almost all [Registry standard API](https://www.terraform.io/registry/api-docs)
+* Provider registry
+  * Supports [Provider Registry Protocol](https://www.terraform.io/internals/provider-registry-protocol) and [Terraform Cloud API](https://www.terraform.io/cloud-docs/api-docs/private-registry/providers) inspired APIs.
 * Access logs
 * Storage
   * Local disk
@@ -44,6 +47,8 @@ Theses are environment variable list that you can configure.
 | `BACKEND_S3_ENDPOINT` | Endpoint of the Amazon S3 compatible object storage. Ignore if you are using Amazon S3  | `string` |  |
 | `BACKEND_S3_SECRET_KEY` | Secret key of Amazon S3 | `string` |  - (Required if `BACKEND_TYPE` is `s3`) |
 | `BACKEND_S3_USE_PATH_STYLE` | Generate URL on path based. Configure to `true` if you are using MinIO or other S3 compatible object storage which is path based instead of subdomain base. | `bool` |  `false` |
+| `ENABLE_MODULE_REGISTRY` | Enables the module registry. | `bool` | `false` |
+| `ENABLE_PROVIDER_REGISTRY` | Enables the module registry. | `bool` | `false` |
 | `LOG_FORMAT` | Format of the logs (supports `json`, `console`, `color`) | `string` | `json` |
 | `LOG_LEVEL` | Level of the logs (supports `info`, `debug`, `warn`, `error`) | `string` | `info` |
 

@@ -30,12 +30,12 @@ const (
 type MetricSyncFunc func(m *RegistryMetrics)
 
 type RegistryMetrics struct {
-	driver  driver.Driver
+	driver  *driver.Driver
 	logger  *zap.Logger
 	metrics map[MetricName]prometheus.Collector
 }
 
-func New(logger *zap.Logger, driver driver.Driver) *RegistryMetrics {
+func New(logger *zap.Logger, driver *driver.Driver) *RegistryMetrics {
 	return &RegistryMetrics{
 		driver: driver,
 		logger: logger.Named("metric"),

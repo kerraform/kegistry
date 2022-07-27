@@ -1,3 +1,5 @@
+export ENABLE_MODULE_REGISTRY=true
+export ENABLE_PROVIDER_REGISTRY=true
 export LOG_LEVEL=info
 export PORT=8888
 

@@ -1,4 +1,4 @@
-package model
+package provider
 
 type AvailableVersion struct {
 	Version   string                     `json:"version"`

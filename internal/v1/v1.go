@@ -8,6 +8,8 @@ import (
 
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
+	"github.com/kerraform/kegistry/internal/v1/module"
+	"github.com/kerraform/kegistry/internal/v1/provider"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
@@ -16,24 +18,24 @@ import (
 
 type Handler struct {
 	logger *zap.Logger
-	driver driver.Driver
+	driver *driver.Driver
 
-	Module   Module
-	Provider Provider
+	Module   *module.Module
+	Provider *provider.Provider
 }
 
 type HandlerConfig struct {
-	Driver driver.Driver
+	Driver *driver.Driver
 	Logger *zap.Logger
 }
 
 func New(cfg *HandlerConfig) *Handler {
-	module := newModule(&moduleConfig{
+	module := module.New(&module.Config{
 		Driver: cfg.Driver,
 		Logger: cfg.Logger.Named("v1.module"),
 	})
 
-	provider := newProvider(&providerConfig{
+	provider := provider.New(&provider.Config{
 		Driver: cfg.Driver,
 		Logger: cfg.Logger.Named("v1.provider"),
 	})
@@ -109,7 +111,7 @@ func (h *Handler) AddGPGKey() http.Handler {
 			zap.String("keyID", pgpKey.KeyIdString()),
 		)
 
-		if err := h.driver.SaveGPGKey(r.Context(), req.Data.Attributes.Namespace, pgpKey.KeyIdString(), []byte(req.Data.Attributes.ASCIIArmor)); err != nil {
+		if err := h.driver.Provider.SaveGPGKey(r.Context(), req.Data.Attributes.Namespace, pgpKey.KeyIdString(), []byte(req.Data.Attributes.ASCIIArmor)); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}

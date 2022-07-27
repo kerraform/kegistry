@@ -1,4 +1,4 @@
-package model
+package provider
 
 type Package struct {
 	OS            string       `json:"os"`
