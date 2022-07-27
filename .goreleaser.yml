@@ -6,7 +6,7 @@ builds:
     ldflags:
       - -s -w
       - -X github.com/kerraform/kegistry/internal/version.Version={{.Version}}
-      - -X github.com/kerraform/kegistry/internal/version.Commit={{.FullCommit}c
+      - -X github.com/kerraform/kegistry/internal/version.Commit={{.FullCommit}}
     goarch:
       - amd64
       - arm64
