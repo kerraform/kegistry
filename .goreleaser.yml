@@ -31,6 +31,7 @@ builds:
       - darwin
       - windows
 dockers:
+  # kegistry
   - build_flag_templates:
       - --pull
       - --label=org.opencontainers.image.created={{.Date}}
@@ -43,10 +44,9 @@ dockers:
     extra_files:
       - LICENSE
     image_templates:
-      - ghcr.io/kerraform/kegistry:{{ .Tag }}
-      - ghcr.io/kerraform/kegistry:v{{ .Major }}
-      - ghcr.io/kerraform/kegistry:v{{ .Major }}.{{ .Minor }}
-      - ghcr.io/kerraform/kegistry:latest
+      - ghcr.io/kerraform/kegistry:{{ .Tag }}-amd64
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}-amd64
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}.{{ .Minor }}-amd64
     goos: linux
     goarch: amd64
     ids:
@@ -59,20 +59,99 @@ dockers:
       - --label=org.opencontainers.image.title={{.ProjectName}}
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
+      - --platform=linux/arm64
+    dockerfile: Dockerfile.compile
+    extra_files:
+      - LICENSE
+    image_templates:
+      - ghcr.io/kerraform/kegistry:{{ .Tag }}-arm64v8
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}-arm64v8
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}.{{ .Minor }}-arm64v8
+    goos: linux
+    goarch: arm64
+    ids:
+      - kegistry
+    use: buildx
+
+  # CLI
+  - build_flag_templates:
+      - --pull
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.url=https://github.com/kerraform/{{ .ProjectName }}
+      - --label=org.opencontainers.image.title={{.ProjectName}}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
       - --platform=linux/amd64
     dockerfile: Dockerfile.cli.compile
     extra_files:
       - LICENSE
     image_templates:
-      - ghcr.io/kerraform/kegistry-cli:{{ .Tag }}
-      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}
-      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}.{{ .Minor }}
-      - ghcr.io/kerraform/kegistry-cli:latest
+      - ghcr.io/kerraform/kegistry-cli:{{ .Tag }}-amd64
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}-amd64
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}.{{ .Minor }}-amd64
+      - ghcr.io/kerraform/kegistry-cli:amd64
     goos: linux
     goarch: amd64
     ids:
       - kegistry-cli
     use: buildx
+  - build_flag_templates:
+      - --pull
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.url=https://github.com/kerraform/{{ .ProjectName }}
+      - --label=org.opencontainers.image.title={{.ProjectName}}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      - --platform=linux/arm64
+    dockerfile: Dockerfile.cli.compile
+    extra_files:
+      - LICENSE
+    image_templates:
+      - ghcr.io/kerraform/kegistry-cli:{{ .Tag }}-arm64v8
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}-arm64v8
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}.{{ .Minor }}-arm64v8
+      - ghcr.io/kerraform/kegistry-cli:arm64v8
+    goos: linux
+    goarch: arm64
+    ids:
+      - kegistry-cli
+    use: buildx
+docker_manifests:
+  # Server
+  - name_template: ghcr.io/kerraform/kegistry:{{ .Tag }}
+    image_templates:
+      - ghcr.io/kerraform/kegistry:{{ .Tag }}-amd64
+      - ghcr.io/kerraform/kegistry:{{ .Tag }}-arm64v8
+  - name_template: ghcr.io/kerraform/kegistry:v{{ .Major }}
+    image_templates:
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}-amd64
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}-arm64v8
+  - name_template: ghcr.io/kerraform/kegistry:v{{ .Major }}.{{ .Minor }}
+    image_templates:
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}.{{ .Minor }}-amd64
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}.{{ .Minor }}-arm64v8
+  - name_template: ghcr.io/kerraform/kegistry:latest
+    image_templates:
+      - ghcr.io/kerraform/kegistry:amd64
+      - ghcr.io/kerraform/kegistry:arm64v8
+
+  # CLI
+  - name_template: ghcr.io/kerraform/kegistry-cli:{{ .Tag }}
+    image_templates:
+      - ghcr.io/kerraform/kegistry-cli:{{ .Tag }}-amd64
+      - ghcr.io/kerraform/kegistry-cli:{{ .Tag }}-arm64v8
+  - name_template: ghcr.io/kerraform/kegistry-cli:v{{ .Major }}
+    image_templates:
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}-amd64
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}-arm64v8
+  - name_template: ghcr.io/kerraform/kegistry-cli:v{{ .Major }}.{{ .Minor }}
+    image_templates:
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}.{{ .Minor }}-amd64
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}.{{ .Minor }}-arm64v8
+  - name_template: ghcr.io/kerraform/kegistry-cli:latest
+    image_templates:
+      - ghcr.io/kerraform/kegistry-cli:amd64
+      - ghcr.io/kerraform/kegistry-cli:arm64v8
 changelog:  
   skip: false
   groups:
