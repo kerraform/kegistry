@@ -2,7 +2,9 @@ package module
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/kerraform/kegistry/internal/driver"
@@ -37,17 +39,72 @@ func New(cfg *Config) Module {
 
 // https://www.terraform.io/registry/api-docs#download-source-code-for-a-specific-module-version
 func (m *module) FindSourceCode() http.Handler {
-	return handler.NewHandler(m.logger, func(w http.ResponseWriter, _ *http.Request) error {
+	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		name := mux.Vars(r)["name"]
+		provider := mux.Vars(r)["provider"]
+		version := mux.Vars(r)["version"]
+
+		l := m.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("name", name),
+			zap.String("provider", provider),
+			zap.String("version", version),
+		)
+
+		url, err := m.driver.Module.GetDownloadURL(r.Context(), namespace, provider, name, version)
+		if err != nil {
+			if os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				return driver.ErrModuleNotExist
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		l.Debug("found source code of module",
+			zap.String("url", url),
+		)
+		w.Header().Set("X-Terraform-Get", url)
 		w.WriteHeader(http.StatusNoContent)
-		w.Header().Set("X-Terraform-Get", "")
 		return nil
 	})
 }
 
 func (m *module) Download() http.Handler {
-	return handler.NewHandler(m.logger, func(w http.ResponseWriter, _ *http.Request) error {
-		w.WriteHeader(http.StatusNoContent)
-		w.Header().Set("X-Terraform-Get", "")
+	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		name := mux.Vars(r)["name"]
+		provider := mux.Vars(r)["provider"]
+		version := mux.Vars(r)["version"]
+
+		l := m.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("name", name),
+			zap.String("provider", provider),
+			zap.String("version", version),
+		)
+
+		f, err := m.driver.Module.GetModule(r.Context(), namespace, name, provider, version)
+		if err != nil {
+			if os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				return driver.ErrModuleNotExist
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		w.Header().Set("Content-Type", "application/octet-stream")
+		if _, err := io.Copy(w, f); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+		defer f.Close()
+
+		l.Debug("distributed module")
 		return nil
 	})
 }

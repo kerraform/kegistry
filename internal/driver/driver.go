@@ -4,12 +4,17 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"regexp"
 
 	"github.com/kerraform/kegistry/internal/model/provider"
 )
 
 var (
+	// Module
+	ErrModuleNotExist = errors.New("module not exist")
+
+	// Provider
 	ErrProviderBinaryNotExist  = errors.New("provider binary not exist")
 	ErrProviderNotExist        = errors.New("provider not exist")
 	ErrProviderVersionNotExist = errors.New("provider version not exist")
@@ -32,8 +37,8 @@ const (
 )
 
 type Module interface {
-	GetDownloadURL(ctx context.Context, namespace, provider, name, version string) error
-	GetModule(ctx context.Context, namespace, provider, name, version string) error
+	GetDownloadURL(ctx context.Context, namespace, provider, name, version string) (string, error)
+	GetModule(ctx context.Context, namespace, provider, name, version string) (*os.File, error)
 	ListAvailableVersions(ctx context.Context, namespace, provider, name string) ([]string, error)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/kerraform/kegistry/internal/driver"
 	"go.uber.org/zap"
@@ -15,12 +16,13 @@ type module struct {
 
 var _ driver.Module = (*module)(nil)
 
-func (d *module) GetDownloadURL(ctx context.Context, namespace, provider, name, version string) error {
-	return nil
+func (d *module) GetDownloadURL(ctx context.Context, namespace, provider, name, version string) (string, error) {
+	return fmt.Sprintf("/registry/v1/modules/%s/%s/%s/%s/package", namespace, provider, name, version), nil
 }
 
-func (d *module) GetModule(ctx context.Context, namespace, provider, name, version string) error {
-	return nil
+func (d *module) GetModule(ctx context.Context, namespace, provider, name, version string) (*os.File, error) {
+	packagePath := fmt.Sprintf("%s/modules/%s/%s/%s/versions/%s/terraform-%s-%s-%v.tar.gz", localRootPath, namespace, provider, name, version, provider, name, version)
+	return os.Open(packagePath)
 }
 
 func (d *module) ListAvailableVersions(ctx context.Context, namespace, provider, name string) ([]string, error) {
