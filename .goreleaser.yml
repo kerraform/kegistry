@@ -47,6 +47,7 @@ dockers:
       - ghcr.io/kerraform/kegistry:{{ .Tag }}-amd64
       - ghcr.io/kerraform/kegistry:v{{ .Major }}-amd64
       - ghcr.io/kerraform/kegistry:v{{ .Major }}.{{ .Minor }}-amd64
+      - ghcr.io/kerraform/kegistry:amd64
     goos: linux
     goarch: amd64
     ids:
@@ -67,6 +68,7 @@ dockers:
       - ghcr.io/kerraform/kegistry:{{ .Tag }}-arm64v8
       - ghcr.io/kerraform/kegistry:v{{ .Major }}-arm64v8
       - ghcr.io/kerraform/kegistry:v{{ .Major }}.{{ .Minor }}-arm64v8
+      - ghcr.io/kerraform/kegistry:arm64v8
     goos: linux
     goarch: arm64
     ids:
