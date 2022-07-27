@@ -27,9 +27,11 @@ type BackendS3 struct {
 }
 
 type Config struct {
-	Backend *Backend `env:",prefix=BACKEND_"`
-	Log     *Log     `env:",prefix=LOG_"`
-	Port    int      `env:"PORT,default=5000"`
+	Backend        *Backend `env:",prefix=BACKEND_"`
+	EnableModule   bool     `env:"ENABLE_MODULE_REGISTRY,default=false"`
+	EnableProvider bool     `env:"ENABLE_PROVIDER_REGISTRY,default=false"`
+	Log            *Log     `env:",prefix=LOG_"`
+	Port           int      `env:"PORT,default=5000"`
 }
 
 func (cfg *Config) Address() string {

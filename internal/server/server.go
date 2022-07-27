@@ -15,29 +15,35 @@ import (
 )
 
 type Server struct {
-	driver *driver.Driver
-	logger *zap.Logger
-	metric *metric.RegistryMetrics
-	mux    *mux.Router
-	server *http.Server
+	driver         *driver.Driver
+	enableModule   bool
+	enableProvider bool
+	logger         *zap.Logger
+	metric         *metric.RegistryMetrics
+	mux            *mux.Router
+	server         *http.Server
 
 	v1 *v1.Handler
 }
 
 type ServerConfig struct {
-	Driver *driver.Driver
-	Logger *zap.Logger
-	Metric *metric.RegistryMetrics
-	V1     *v1.Handler
+	Driver         *driver.Driver
+	EnableModule   bool
+	EnableProvider bool
+	Logger         *zap.Logger
+	Metric         *metric.RegistryMetrics
+	V1             *v1.Handler
 }
 
 func NewServer(cfg *ServerConfig) *Server {
 	s := &Server{
-		driver: cfg.Driver,
-		logger: cfg.Logger,
-		metric: cfg.Metric,
-		mux:    mux.NewRouter(),
-		v1:     cfg.V1,
+		driver:         cfg.Driver,
+		enableModule:   cfg.EnableModule,
+		enableProvider: cfg.EnableProvider,
+		logger:         cfg.Logger,
+		metric:         cfg.Metric,
+		mux:            mux.NewRouter(),
+		v1:             cfg.V1,
 	}
 
 	s.metric.RegisterAllMetrics()

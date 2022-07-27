@@ -28,6 +28,7 @@ func (s *Server) registerRegistryHandler() {
 	registry.Use(middleware.AccessMetric(s.metric))
 
 	module := registry.PathPrefix(v1ModulesPath).Subrouter()
+	module.Use(middleware.Enable(middleware.ModuleRegistryType, s.enableModule))
 
 	// Module Registry Protocol
 	// List Available Versions
@@ -43,6 +44,7 @@ func (s *Server) registerRegistryHandler() {
 	module.Methods(http.MethodGet).Path("/{namespace}/{name}/{provider}/{version}/{file}").Handler(s.v1.Module.Download())
 
 	provider := registry.PathPrefix(v1ProvidersPath).Subrouter()
+	provider.Use(middleware.Enable(middleware.ProviderRegistryType, s.enableProvider))
 
 	// Provider Registry Protocol
 	// List Available Versions
