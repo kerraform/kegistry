@@ -1,4 +1,4 @@
 FROM alpine:latest
 
-COPY kegistry /usr/bin
+COPY cli /usr/bin/kegistry
 ENTRYPOINT ["kegistry"]

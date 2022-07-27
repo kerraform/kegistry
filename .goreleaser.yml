@@ -14,6 +14,22 @@ builds:
       - linux
       - darwin
       - windows
+  - id: kegistry-cli
+    env:
+      - CGO_ENABLED=0
+    main: ./cmd/
+    binary: cli
+    ldflags:
+      - -s -w
+      - -X github.com/kerraform/kegistry/internal/version.Version={{.Version}}
+      - -X github.com/kerraform/kegistry/internal/version.Commit={{.FullCommit}}
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - linux
+      - darwin
+      - windows
 dockers:
   - build_flag_templates:
       - --pull
@@ -27,14 +43,35 @@ dockers:
     extra_files:
       - LICENSE
     image_templates:
-      - docker.pkg.github.com/kerraform/kegistry/kegistry:{{ .Tag }}
-      - docker.pkg.github.com/kerraform/kegistry/kegistry:v{{ .Major }}
-      - docker.pkg.github.com/kerraform/kegistry/kegistry:v{{ .Major }}.{{ .Minor }}
-      - docker.pkg.github.com/kerraform/kegistry/kegistry:latest
+      - ghcr.io/kerraform/kegistry:{{ .Tag }}
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}
+      - ghcr.io/kerraform/kegistry:v{{ .Major }}.{{ .Minor }}
+      - ghcr.io/kerraform/kegistry:latest
     goos: linux
     goarch: amd64
     ids:
       - kegistry
+    use: buildx
+  - build_flag_templates:
+      - --pull
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.url=https://github.com/kerraform/{{ .ProjectName }}
+      - --label=org.opencontainers.image.title={{.ProjectName}}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      - --platform=linux/amd64
+    dockerfile: Dockerfile.cli.compile
+    extra_files:
+      - LICENSE
+    image_templates:
+      - ghcr.io/kerraform/kegistry-cli:{{ .Tag }}
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}
+      - ghcr.io/kerraform/kegistry-cli:v{{ .Major }}.{{ .Minor }}
+      - ghcr.io/kerraform/kegistry-cli:latest
+    goos: linux
+    goarch: amd64
+    ids:
+      - kegistry-cli
     use: buildx
 changelog:  
   skip: false

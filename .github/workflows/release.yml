@@ -32,7 +32,7 @@ jobs:
       - name: Docker Login
         uses: azure/docker-login@v1
         with:
-          login-server: docker.pkg.github.com
+          login-server: ghcr.io
           username: kerraform
           password: ${{ secrets.GITHUB_TOKEN }}
 
