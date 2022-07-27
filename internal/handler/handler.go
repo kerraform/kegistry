@@ -1,10 +1,15 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"go.uber.org/zap"
 )
+
+type Error struct {
+	Message string `json:"message"`
+}
 
 type Handler struct {
 	logger     *zap.Logger
@@ -22,6 +27,15 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	e := &Error{
+		Message: err.Error(),
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if err := json.NewEncoder(w).Encode(e); err != nil {
+		h.logger.Error("error to response", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 	h.logger.Error("error handling request", zap.Error(err))
 }
 
