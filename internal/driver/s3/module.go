@@ -24,6 +24,6 @@ func (d *module) GetModule(ctx context.Context, namespace, provider, name, versi
 	return nil
 }
 
-func (d *module) ListAvailableVersions(ctx context.Context, namespace, provider, name string) error {
-	return nil
+func (d *module) ListAvailableVersions(ctx context.Context, namespace, provider, name string) ([]string, error) {
+	return nil, nil
 }

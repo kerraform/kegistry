@@ -34,7 +34,7 @@ const (
 type Module interface {
 	GetDownloadURL(ctx context.Context, namespace, provider, name, version string) error
 	GetModule(ctx context.Context, namespace, provider, name, version string) error
-	ListAvailableVersions(ctx context.Context, namespace, provider, name string) error
+	ListAvailableVersions(ctx context.Context, namespace, provider, name string) ([]string, error)
 }
 
 type Provider interface {

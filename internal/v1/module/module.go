@@ -69,15 +69,35 @@ func (m *module) ListAvailableVersions() http.Handler {
 	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		name := mux.Vars(r)["name"]
-		system := mux.Vars(r)["system"]
+		provider := mux.Vars(r)["provider"]
 
 		l := m.logger.With(
 			zap.String("namespace", namespace),
 			zap.String("name", name),
-			zap.String("system", system),
+			zap.String("provider", provider),
 		)
 
-		resp := &ListAvailableVersionsResponse{}
+		versions, err := m.driver.Module.ListAvailableVersions(r.Context(), namespace, provider, name)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		vs := make([]ListAvailableVersionsModelVersion, len(versions))
+		for i, version := range versions {
+			vs[i] = ListAvailableVersionsModelVersion{
+				Version: version,
+			}
+		}
+
+		resp := &ListAvailableVersionsResponse{
+			Modules: []ListAvailableVersionsModel{
+				{
+					Versions: vs,
+				},
+			},
+		}
+
 		l.Info("list available module versions")
 		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
