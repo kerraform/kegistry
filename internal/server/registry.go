@@ -96,8 +96,8 @@ type GetServiceDiscoveryResponse struct {
 func (s *Server) ServiceDiscovery() http.Handler {
 	return handler.NewHandler(s.logger, func(w http.ResponseWriter, _ *http.Request) error {
 		resp := &GetServiceDiscoveryResponse{
-			ModulesV1:   fmt.Sprintf("%s/", v1ModulesPath),
-			ProvidersV1: fmt.Sprintf("%s/", v1ProvidersPath),
+			ModulesV1:   fmt.Sprintf("%s/%s/", registryPath, v1ModulesPath),
+			ProvidersV1: fmt.Sprintf("%s/%s/", registryPath, v1ProvidersPath),
 		}
 
 		return json.NewEncoder(w).Encode(resp)
