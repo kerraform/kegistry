@@ -20,8 +20,8 @@ type Handler struct {
 	logger *zap.Logger
 	driver *driver.Driver
 
-	Module   module.Module
-	Provider provider.Provider
+	Module   *module.Module
+	Provider *provider.Provider
 }
 
 type HandlerConfig struct {

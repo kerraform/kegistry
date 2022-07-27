@@ -35,6 +35,16 @@ func (s *Server) registerRegistryHandler() {
 	// List Available Versions
 	// https://www.terraform.io/registry/api-docs#list-available-versions-for-a-specific-module
 	module.Methods(http.MethodGet).Path("/{namespace}/{name}/{provider}/versions").Handler(s.v1.Module.ListAvailableVersions())
+	// Create module version
+	// https://www.terraform.io/cloud-docs/api-docs/private-registry/modules#create-a-module-version
+	module.Methods(http.MethodPost).Path("/{namespace}/{name}/{provider}/versions").Handler(s.v1.Module.CreateModuleVersion())
+
+	// Upload a version
+	module.Methods(http.MethodPut).Path("/{namespace}/{name}/{provider}/versions/{version}").Handler(s.v1.Module.UploadModuleVersion())
+
+	// Create module
+	// https://www.terraform.io/cloud-docs/api-docs/private-registry/modules#create-a-module-with-no-vcs-connection
+	module.Methods(http.MethodPost).Path("/{namespace}").Handler(s.v1.Module.CreateModule())
 
 	// Download source code
 	// https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version

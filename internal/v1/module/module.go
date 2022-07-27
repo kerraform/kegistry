@@ -12,67 +12,135 @@ import (
 	"go.uber.org/zap"
 )
 
-type Module interface {
-	Download() http.Handler
-	FindSourceCode() http.Handler
-	ListAvailableVersions() http.Handler
-}
+type DataType string
 
-type module struct {
+const (
+	DataTypeRegistryModule        DataType = "registry-modules"
+	DataTypeRegistryModuleVersion DataType = "registry-module-versions"
+)
+
+type Module struct {
 	driver *driver.Driver
 	logger *zap.Logger
 }
-
-var _ Module = (*module)(nil)
 
 type Config struct {
 	Driver *driver.Driver
 	Logger *zap.Logger
 }
 
-func New(cfg *Config) Module {
-	return &module{
+func New(cfg *Config) *Module {
+	return &Module{
 		driver: cfg.Driver,
 		logger: cfg.Logger,
 	}
 }
 
-// https://www.terraform.io/registry/api-docs#download-source-code-for-a-specific-module-version
-func (m *module) FindSourceCode() http.Handler {
+type CreateModuleRequest struct {
+	Data *CreateModuleRequestData `json:"data"`
+}
+
+type CreateModuleRequestData struct {
+	Attributes *CreateModuleDataAttributes `json:"attributes"`
+	Type       DataType                    `json:"type"`
+}
+
+type CreateModuleDataAttributes struct {
+	Name     string `json:"name"`
+	Provider string `json:"provider"`
+}
+
+func (m *Module) CreateModule() http.Handler {
 	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
-		name := mux.Vars(r)["name"]
-		provider := mux.Vars(r)["provider"]
-		version := mux.Vars(r)["version"]
+
+		var req CreateModuleRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+		defer r.Body.Close()
 
 		l := m.logger.With(
 			zap.String("namespace", namespace),
-			zap.String("name", name),
-			zap.String("provider", provider),
-			zap.String("version", version),
 		)
 
-		url, err := m.driver.Module.GetDownloadURL(r.Context(), namespace, provider, name, version)
-		if err != nil {
-			if os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				return driver.ErrModuleNotExist
-			}
-
+		if err := m.driver.Module.CreateModule(r.Context(), namespace, req.Data.Attributes.Provider, req.Data.Attributes.Name); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}
 
-		l.Debug("found source code of module",
-			zap.String("url", url),
-		)
-		w.Header().Set("X-Terraform-Get", url)
+		l.Debug("create module")
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	})
 }
 
-func (m *module) Download() http.Handler {
+type CreateModuleVersionRequest struct {
+	Data *CreateModuleVersionRequestData `json:"data"`
+}
+
+type CreateModuleVersionRequestData struct {
+	Attributes *CreateModuleVersionDataAttributes `json:"attributes"`
+	Type       DataType                           `json:"type"`
+}
+
+type CreateModuleVersionDataAttributes struct {
+	Version string `json:"version"`
+}
+
+type CreateModuleVersionResponse struct {
+	Data *CreateModuleVersionData `json:"data"`
+}
+
+type CreateModuleVersionData struct {
+	Links *CreateModuleVersionDataLinks `json:"links"`
+}
+
+type CreateModuleVersionDataLinks struct {
+	Upload string `json:"upload"`
+}
+
+func (m *Module) CreateModuleVersion() http.Handler {
+	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		provider := mux.Vars(r)["provider"]
+		name := mux.Vars(r)["name"]
+
+		var req CreateModuleVersionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		l := m.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("name", name),
+			zap.String("provider", provider),
+			zap.String("version", req.Data.Attributes.Version),
+		)
+
+		result, err := m.driver.Module.CreateVersion(r.Context(), namespace, provider, name, req.Data.Attributes.Version)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		resp := &CreateModuleVersionResponse{
+			Data: &CreateModuleVersionData{
+				Links: &CreateModuleVersionDataLinks{
+					Upload: result.Upload,
+				},
+			},
+		}
+
+		l.Debug("create module version")
+		return json.NewEncoder(w).Encode(resp)
+	})
+}
+
+func (m *Module) Download() http.Handler {
 	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		name := mux.Vars(r)["name"]
@@ -109,6 +177,41 @@ func (m *module) Download() http.Handler {
 	})
 }
 
+// https://www.terraform.io/registry/api-docs#download-source-code-for-a-specific-module-version
+func (m *Module) FindSourceCode() http.Handler {
+	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		name := mux.Vars(r)["name"]
+		provider := mux.Vars(r)["provider"]
+		version := mux.Vars(r)["version"]
+
+		l := m.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("name", name),
+			zap.String("provider", provider),
+			zap.String("version", version),
+		)
+
+		url, err := m.driver.Module.GetDownloadURL(r.Context(), namespace, provider, name, version)
+		if err != nil {
+			if os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				return driver.ErrModuleNotExist
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		l.Debug("found source code of module",
+			zap.String("url", url),
+		)
+		w.Header().Set("X-Terraform-Get", url)
+		w.WriteHeader(http.StatusNoContent)
+		return nil
+	})
+}
+
 type ListAvailableVersionsResponse struct {
 	Modules []ListAvailableVersionsModel `json:"modules"`
 }
@@ -122,7 +225,7 @@ type ListAvailableVersionsModelVersion struct {
 }
 
 // https://www.terraform.io/internals/module-registry-protocol#list-available-versions-for-a-specific-module
-func (m *module) ListAvailableVersions() http.Handler {
+func (m *Module) ListAvailableVersions() http.Handler {
 	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		name := mux.Vars(r)["name"]
@@ -158,5 +261,33 @@ func (m *module) ListAvailableVersions() http.Handler {
 		l.Info("list available module versions")
 		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
+	})
+}
+
+func (m *Module) UploadModuleVersion() http.Handler {
+	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+		namespace := mux.Vars(r)["namespace"]
+		provider := mux.Vars(r)["provider"]
+		name := mux.Vars(r)["name"]
+		version := mux.Vars(r)["version"]
+
+		l := m.logger.With(
+			zap.String("namespace", namespace),
+			zap.String("name", name),
+			zap.String("provider", provider),
+			zap.String("version", version),
+		)
+
+		l.Info("hhhhhhh")
+
+		if err := m.driver.Module.SavePackage(r.Context(), namespace, provider, name, version, r.Body); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+		defer r.Body.Close()
+
+		l.Debug("save module version")
+		w.WriteHeader(http.StatusOK)
+		return nil
 	})
 }

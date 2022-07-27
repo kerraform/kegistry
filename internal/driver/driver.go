@@ -37,9 +37,12 @@ const (
 )
 
 type Module interface {
+	CreateModule(ctx context.Context, namespace, provider, name string) error
+	CreateVersion(ctx context.Context, namespace, provider, name, version string) (*CreateModuleVersionResult, error)
 	GetDownloadURL(ctx context.Context, namespace, provider, name, version string) (string, error)
 	GetModule(ctx context.Context, namespace, provider, name, version string) (*os.File, error)
 	ListAvailableVersions(ctx context.Context, namespace, provider, name string) ([]string, error)
+	SavePackage(ctx context.Context, namespace, provider, name, version string, body io.Reader) error
 }
 
 type Provider interface {
@@ -63,6 +66,10 @@ type Provider interface {
 type Driver struct {
 	Module   Module
 	Provider Provider
+}
+
+type CreateModuleVersionResult struct {
+	Upload string
 }
 
 type ProviderVersionMetadata struct {

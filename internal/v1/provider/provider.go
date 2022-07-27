@@ -20,34 +20,18 @@ const (
 	DataTypeRegistryProviderPlatforms DataType = "registry-provider-platforms"
 )
 
-type Provider interface {
-	CreateProvider() http.Handler
-	CreateProviderPlatform() http.Handler
-	CreateProviderVersion() http.Handler
-	DownloadPlatformBinary() http.Handler
-	DownloadSHASums() http.Handler
-	DownloadSHASumsSignature() http.Handler
-	FindPackage() http.Handler
-	ListAvailableVersions() http.Handler
-	UploadPlatformBinary() http.Handler
-	UploadSHASums() http.Handler
-	UploadSHASumsSignature() http.Handler
-}
-
-type provider struct {
+type Provider struct {
 	driver *driver.Driver
 	logger *zap.Logger
 }
-
-var _ Provider = (*provider)(nil)
 
 type Config struct {
 	Driver *driver.Driver
 	Logger *zap.Logger
 }
 
-func New(cfg *Config) Provider {
-	return &provider{
+func New(cfg *Config) *Provider {
+	return &Provider{
 		driver: cfg.Driver,
 		logger: cfg.Logger,
 	}
@@ -72,7 +56,7 @@ type CreateProviderRequestDataAttributes struct {
 	Namespace string `json:"namespace"`
 }
 
-func (p *provider) CreateProvider() http.Handler {
+func (p *Provider) CreateProvider() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		var req CreateProviderRequest
 
@@ -118,7 +102,7 @@ type CreateProviderPlatformResponseDataLink struct {
 	ProviderBinaryUploads string `json:"provider-binary-upload"`
 }
 
-func (p *provider) CreateProviderPlatform() http.Handler {
+func (p *Provider) CreateProviderPlatform() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
@@ -191,7 +175,7 @@ type CreateProviderVersionResponseDataLink struct {
 	SHASumsSigUpload string `json:"shasums-sig-upload"`
 }
 
-func (p *provider) CreateProviderVersion() http.Handler {
+func (p *Provider) CreateProviderVersion() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
@@ -248,7 +232,7 @@ func (p *provider) CreateProviderVersion() http.Handler {
 	})
 }
 
-func (p *provider) DownloadPlatformBinary() http.Handler {
+func (p *Provider) DownloadPlatformBinary() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
@@ -280,7 +264,7 @@ func (p *provider) DownloadPlatformBinary() http.Handler {
 	})
 }
 
-func (p *provider) DownloadSHASums() http.Handler {
+func (p *Provider) DownloadSHASums() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
@@ -308,7 +292,7 @@ func (p *provider) DownloadSHASums() http.Handler {
 	})
 }
 
-func (p *provider) DownloadSHASumsSignature() http.Handler {
+func (p *Provider) DownloadSHASumsSignature() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
@@ -336,7 +320,7 @@ func (p *provider) DownloadSHASumsSignature() http.Handler {
 	})
 }
 
-func (p *provider) FindPackage() http.Handler {
+func (p *Provider) FindPackage() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
@@ -402,7 +386,7 @@ type AvailableVersion struct {
 	Platforms []model.AvailableVersionPlatform `json:"platforms"`
 }
 
-func (p *provider) ListAvailableVersions() http.Handler {
+func (p *Provider) ListAvailableVersions() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
@@ -421,7 +405,7 @@ func (p *provider) ListAvailableVersions() http.Handler {
 	})
 }
 
-func (p *provider) UploadPlatformBinary() http.Handler {
+func (p *Provider) UploadPlatformBinary() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
@@ -447,7 +431,7 @@ func (p *provider) UploadPlatformBinary() http.Handler {
 	})
 }
 
-func (p *provider) UploadSHASums() http.Handler {
+func (p *Provider) UploadSHASums() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
@@ -469,7 +453,7 @@ func (p *provider) UploadSHASums() http.Handler {
 	})
 }
 
-func (p *provider) UploadSHASumsSignature() http.Handler {
+func (p *Provider) UploadSHASumsSignature() http.Handler {
 	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
