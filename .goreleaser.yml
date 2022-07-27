@@ -16,24 +16,26 @@ builds:
       - windows
 dockers:
   - build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--platform=linux/amd64"
+      - --pull
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.url=https://github.com/kerraform/{{ .ProjectName }}
+      - --label=org.opencontainers.image.title={{.ProjectName}}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      - --platform=linux/amd64
     dockerfile: Dockerfile.compile
     extra_files:
       - LICENSE
     image_templates:
-      - "docker.pkg.github.com/kerraform/kegistry/kegistry:{{ .Tag }}"
-      - "docker.pkg.github.com/kerraform/kegistry/kegistry:v{{ .Major }}"
-      - "docker.pkg.github.com/kerraform/kegistry/kegistry:v{{ .Major }}.{{ .Minor }}"
-      - "docker.pkg.github.com/kerraform/kegistry/kegistry:latest"
+      - docker.pkg.github.com/kerraform/kegistry/kegistry:{{ .Tag }}
+      - docker.pkg.github.com/kerraform/kegistry/kegistry:v{{ .Major }}
+      - docker.pkg.github.com/kerraform/kegistry/kegistry:v{{ .Major }}.{{ .Minor }}
+      - docker.pkg.github.com/kerraform/kegistry/kegistry:latest
     goos: linux
     goarch: amd64
     ids:
       - kegistry
+    use: buildx
 changelog:  
   skip: false
   groups:
