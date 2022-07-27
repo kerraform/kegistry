@@ -10,6 +10,9 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/armor"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -17,9 +20,6 @@ import (
 	"github.com/kerraform/kegistry/internal/driver"
 	model "github.com/kerraform/kegistry/internal/model/provider"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/armor"
-	"golang.org/x/crypto/openpgp/packet"
 	"golang.org/x/sync/errgroup"
 )
 
