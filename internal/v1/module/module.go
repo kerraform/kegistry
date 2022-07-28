@@ -136,6 +136,7 @@ func (m *Module) CreateModuleVersion() http.Handler {
 		}
 
 		l.Debug("create module version")
+		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
 	})
 }
@@ -173,6 +174,7 @@ func (m *Module) Download() http.Handler {
 		defer f.Close()
 
 		l.Debug("distributed module")
+		w.WriteHeader(http.StatusOK)
 		return nil
 	})
 }
@@ -277,8 +279,6 @@ func (m *Module) UploadModuleVersion() http.Handler {
 			zap.String("provider", provider),
 			zap.String("version", version),
 		)
-
-		l.Info("hhhhhhh")
 
 		if err := m.driver.Module.SavePackage(r.Context(), namespace, provider, name, version, r.Body); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
