@@ -71,7 +71,29 @@ func (s *ProviderService) CreateVersionPlatform(ctx context.Context, namespace, 
 	return url, nil
 }
 
-func (s *ProviderService) UploadProviderBinary(ctx context.Context, u *url.URL, pkg io.ReadWriter) error {
+func (s *ProviderService) SaveGPGKey(ctx context.Context, key io.ReadWriter) error {
+	opts := []RequestOpt{
+		WithBinary(true),
+	}
+
+	req, err := s.client.NewPutRequest("gpg-key", key, opts...)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.client.Do(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("invalid status code, got: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (s *ProviderService) UploadProviderBinary(ctx context.Context, u *url.URL, b io.ReadWriter) error {
 	opts := []RequestOpt{
 		WithBinary(true),
 	}
@@ -80,7 +102,7 @@ func (s *ProviderService) UploadProviderBinary(ctx context.Context, u *url.URL, 
 		opts = append(opts, WithURL(u))
 	}
 
-	req, err := s.client.NewPutRequest(u.String(), nil, opts...)
+	req, err := s.client.NewPutRequest(u.String(), b, opts...)
 	if err != nil {
 		return err
 	}

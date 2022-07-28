@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type createOpts struct {
+type saveOpts struct {
 	arch       string
 	binaryPath string
 	namespace  string
@@ -19,8 +19,8 @@ type createOpts struct {
 	version    string
 }
 
-func newCreateCmd() *cobra.Command {
-	opts := &createOpts{}
+func newSaveCmd() *cobra.Command {
+	opts := &saveOpts{}
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -42,7 +42,7 @@ func newCreateCmd() *cobra.Command {
 	return cmd
 }
 
-func runCreateCmd(opts *createOpts) func(cmd *cobra.Command, args []string) error {
+func runCreateCmd(opts *saveOpts) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		u, err := url.Parse(viper.GetString("url"))

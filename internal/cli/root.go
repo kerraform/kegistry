@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/kerraform/kegistry/internal/cli/gpgkey"
 	"github.com/kerraform/kegistry/internal/cli/module"
 	"github.com/kerraform/kegistry/internal/cli/provider"
 	"github.com/kerraform/kegistry/internal/version"
@@ -24,6 +25,7 @@ const (
 
 func Execute() error {
 	rootCmd.AddCommand(newVersionCmd())
+	rootCmd.AddCommand(gpgkey.NewCmd())
 	rootCmd.AddCommand(module.NewCmd())
 	rootCmd.AddCommand(provider.NewCmd())
 

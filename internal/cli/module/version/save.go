@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type createOpts struct {
+type saveOpts struct {
 	packagePath string
 	namespace   string
 	name        string
@@ -18,13 +18,13 @@ type createOpts struct {
 	version     string
 }
 
-func newCreateCmd() *cobra.Command {
-	opts := &createOpts{}
+func newSaveCmd() *cobra.Command {
+	opts := &saveOpts{}
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create Terraform module version",
-		RunE:  runCreateCmd(opts),
+		Use:   "save",
+		Short: "Save Terraform module version",
+		RunE:  runSaveCmd(opts),
 	}
 
 	flags := cmd.Flags()
@@ -40,7 +40,7 @@ func newCreateCmd() *cobra.Command {
 	return cmd
 }
 
-func runCreateCmd(opts *createOpts) func(cmd *cobra.Command, args []string) error {
+func runSaveCmd(opts *saveOpts) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		u, err := url.Parse(viper.GetString("url"))

@@ -1,4 +1,4 @@
-package version
+package gpgkey
 
 import (
 	"github.com/spf13/cobra"
@@ -6,10 +6,10 @@ import (
 
 func NewCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Module related operations",
+		Use:   "gpg-key",
+		Short: "GPG key related operations",
 		Aliases: []string{
-			"v",
+			"gk",
 		},
 	}
 
