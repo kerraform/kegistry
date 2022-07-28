@@ -15,7 +15,6 @@ type saveOpts struct {
 	namespace   string
 	name        string
 	provider    string
-	version     string
 }
 
 func newSaveCmd() *cobra.Command {
@@ -24,6 +23,7 @@ func newSaveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "save",
 		Short: "Save Terraform module version",
+		Args:  cobra.ExactArgs(1),
 		RunE:  runSaveCmd(opts),
 	}
 
@@ -33,7 +33,6 @@ func newSaveCmd() *cobra.Command {
 	flags.StringVarP(&opts.namespace, "namespace", "n", "", "Namespace (a.k.a organization) of the module. )")
 	flags.StringVar(&opts.name, "name", "", "Name of the module")
 	flags.StringVarP(&opts.provider, "provider", "p", "", "Target provider")
-	flags.StringVar(&opts.version, "version", "", "Version of the provider")
 	viper.BindEnv("url", "URL")
 	viper.BindPFlag("url", flags.Lookup("url"))
 
@@ -59,7 +58,8 @@ func runSaveCmd(opts *saveOpts) func(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		uploadURL, err := mc.CreateVersion(ctx, opts.namespace, opts.name, opts.provider, opts.version)
+		version := args[0]
+		uploadURL, err := mc.CreateVersion(ctx, opts.namespace, opts.name, opts.provider, version)
 		if err != nil {
 			return err
 		}
