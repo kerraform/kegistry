@@ -7,6 +7,7 @@ import (
 	"github.com/kerraform/kegistry/internal/cli/provider"
 	"github.com/kerraform/kegistry/internal/version"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -17,10 +18,17 @@ var (
 	}
 )
 
+const (
+	envPrefix = "KEGISTRY"
+)
+
 func Execute() error {
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(module.NewCmd())
 	rootCmd.AddCommand(provider.NewCmd())
+
+	viper.SetEnvPrefix(envPrefix)
+	viper.AutomaticEnv()
 
 	return rootCmd.Execute()
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/kerraform/kegistry/internal/handler"
 	"github.com/kerraform/kegistry/internal/middleware"
+	"github.com/kerraform/kegistry/internal/model"
 )
 
 const (
@@ -104,18 +105,14 @@ func (s *Server) registerRegistryHandler() {
 	provider.Methods(http.MethodPost).Path("//v1/gpg-key").Handler(s.v1.AddGPGKey())
 }
 
-type GetServiceDiscoveryResponse struct {
-	ModulesV1   string `json:"modules.v1"`
-	ProvidersV1 string `json:"providers.v1"`
-}
-
 func (s *Server) ServiceDiscovery() http.Handler {
 	return handler.NewHandler(s.logger, func(w http.ResponseWriter, _ *http.Request) error {
-		resp := &GetServiceDiscoveryResponse{
+		resp := &model.Service{
 			ModulesV1:   registryPath + v1ModulesPath,
 			ProvidersV1: registryPath + v1ProvidersPath,
 		}
 
+		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
 	})
 }

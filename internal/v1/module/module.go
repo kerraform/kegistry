@@ -136,6 +136,7 @@ func (m *Module) CreateModuleVersion() http.Handler {
 		}
 
 		l.Debug("create module version")
+		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
 	})
 }
@@ -173,6 +174,7 @@ func (m *Module) Download() http.Handler {
 		defer f.Close()
 
 		l.Debug("distributed module")
+		w.WriteHeader(http.StatusOK)
 		return nil
 	})
 }
