@@ -1,6 +1,9 @@
 package version
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/kerraform/kegistry/internal/cli/provider/version/platform"
+	"github.com/spf13/cobra"
+)
 
 func NewCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -11,6 +14,6 @@ func NewCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newCreateCmd())
+	cmd.AddCommand(platform.NewCmd())
 	return cmd
 }
