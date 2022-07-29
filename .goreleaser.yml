@@ -166,7 +166,7 @@ changelog:
     - title: Bug Fixes 🐛
       regexp: "^.*fix[(\\w)]*:+.*$"
       order: 2
-    - title: Others 🎐s
+    - title: Others 🎐
       order: 999
 release:  
   github: 
