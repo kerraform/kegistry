@@ -30,15 +30,19 @@ func NewDriver(logger *zap.Logger, opts *DriverOpts) (*driver.Driver, error) {
 		return nil, fmt.Errorf("invalid s3 credentials")
 	}
 
-	endpointResolver := &endpointResolver{
-		URL: opts.Endpoint,
+	cred := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(opts.AccessKey, opts.SecretKey, ""))
+	loadOpts := []func(*config.LoadOptions) error{
+		config.WithCredentialsProvider(cred),
 	}
 
-	cred := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(opts.AccessKey, opts.SecretKey, ""))
-	cfg, err := config.LoadDefaultConfig(context.Background(),
-		config.WithCredentialsProvider(cred),
-		config.WithEndpointResolverWithOptions(endpointResolver),
-	)
+	if opts.Endpoint != "" {
+		endpointResolver := &endpointResolver{
+			URL: opts.Endpoint,
+		}
+		loadOpts = append(loadOpts, config.WithEndpointResolverWithOptions(endpointResolver))
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.Background(), loadOpts...)
 	if err != nil {
 		return nil, err
 	}
