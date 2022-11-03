@@ -61,16 +61,11 @@ func (m *Module) CreateModule() http.Handler {
 		}
 		defer r.Body.Close()
 
-		l := m.logger.With(
-			zap.String("namespace", namespace),
-		)
-
 		if err := m.driver.Module.CreateModule(r.Context(), namespace, req.Data.Attributes.Provider, req.Data.Attributes.Name); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}
 
-		l.Debug("create module")
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	})
@@ -113,13 +108,6 @@ func (m *Module) CreateModuleVersion() http.Handler {
 			return err
 		}
 
-		l := m.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("name", name),
-			zap.String("provider", provider),
-			zap.String("version", req.Data.Attributes.Version),
-		)
-
 		result, err := m.driver.Module.CreateVersion(r.Context(), namespace, provider, name, req.Data.Attributes.Version)
 
 		if err != nil {
@@ -135,7 +123,6 @@ func (m *Module) CreateModuleVersion() http.Handler {
 			},
 		}
 
-		l.Debug("create module version")
 		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
 	})
@@ -147,13 +134,6 @@ func (m *Module) Download() http.Handler {
 		name := mux.Vars(r)["name"]
 		provider := mux.Vars(r)["provider"]
 		version := mux.Vars(r)["version"]
-
-		l := m.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("name", name),
-			zap.String("provider", provider),
-			zap.String("version", version),
-		)
 
 		f, err := m.driver.Module.GetModule(r.Context(), namespace, name, provider, version)
 		if err != nil {
@@ -173,7 +153,6 @@ func (m *Module) Download() http.Handler {
 		}
 		defer f.Close()
 
-		l.Debug("distributed module")
 		w.WriteHeader(http.StatusOK)
 		return nil
 	})
@@ -186,13 +165,6 @@ func (m *Module) FindSourceCode() http.Handler {
 		name := mux.Vars(r)["name"]
 		provider := mux.Vars(r)["provider"]
 		version := mux.Vars(r)["version"]
-
-		l := m.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("name", name),
-			zap.String("provider", provider),
-			zap.String("version", version),
-		)
 
 		url, err := m.driver.Module.GetDownloadURL(r.Context(), namespace, provider, name, version)
 		if err != nil {
@@ -233,12 +205,6 @@ func (m *Module) ListAvailableVersions() http.Handler {
 		name := mux.Vars(r)["name"]
 		provider := mux.Vars(r)["provider"]
 
-		l := m.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("name", name),
-			zap.String("provider", provider),
-		)
-
 		versions, err := m.driver.Module.ListAvailableVersions(r.Context(), namespace, provider, name)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -260,7 +226,6 @@ func (m *Module) ListAvailableVersions() http.Handler {
 			},
 		}
 
-		l.Info("list available module versions")
 		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
 	})
@@ -273,20 +238,12 @@ func (m *Module) UploadModuleVersion() http.Handler {
 		name := mux.Vars(r)["name"]
 		version := mux.Vars(r)["version"]
 
-		l := m.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("name", name),
-			zap.String("provider", provider),
-			zap.String("version", version),
-		)
-
 		if err := m.driver.Module.SavePackage(r.Context(), namespace, provider, name, version, r.Body); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}
 		defer r.Body.Close()
 
-		l.Debug("save module version")
 		w.WriteHeader(http.StatusOK)
 		return nil
 	})
