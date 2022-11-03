@@ -102,7 +102,7 @@ func (s *Server) registerRegistryHandler() {
 
 	// Add GPG Key
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/gpg-keys#add-a-gpg-key
-	provider.Methods(http.MethodPost).Path("//v1/gpg-key").Handler(s.v1.AddGPGKey())
+	provider.Methods(http.MethodPost).Path("/v1/gpg-key").Handler(s.v1.AddGPGKey())
 }
 
 func (s *Server) ServiceDiscovery() http.Handler {
