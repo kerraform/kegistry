@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/kerraform/kegistry/internal/driver"
 	model "github.com/kerraform/kegistry/internal/model/provider"
 	"go.uber.org/zap"
@@ -237,14 +239,63 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 }
 
 func (d *provider) IsGPGKeyCreated(ctx context.Context, namespace, registryName string) error {
+	keyPath := fmt.Sprintf("%s/%s/%s", driver.ProviderRootPath, namespace, driver.KeyDirname)
+	objs, err := d.s3.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+		Bucket:    aws.String(d.bucket),
+		Delimiter: aws.String(keyPath),
+	})
+
+	if err != nil {
+		var bne *types.NotFound
+		if errors.As(err, &bne) {
+			return driver.ErrProviderGPGKeyNotExist
+		}
+
+		return err
+	}
+
+	if len(objs.Contents) == 0 {
+		return driver.ErrProviderGPGKeyNotExist
+	}
+
 	return nil
 }
 
 func (d *provider) IsProviderCreated(ctx context.Context, namespace, registryName string) error {
+	key := fmt.Sprintf("%s/%s/%s", driver.ProviderRootPath, namespace, registryName)
+	_, err := d.s3.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		var bne *types.NotFound
+		if errors.As(err, &bne) {
+			return driver.ErrProviderGPGKeyNotExist
+		}
+
+		return err
+	}
+
 	return nil
 }
 
 func (d *provider) IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error {
+	key := fmt.Sprintf("%s/%s/%s/versions/%s", driver.ProviderRootPath, namespace, registryName, version)
+	_, err := d.s3.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(d.bucket),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		var bne *types.NotFound
+		if errors.As(err, &bne) {
+			return driver.ErrProviderGPGKeyNotExist
+		}
+
+		return err
+	}
+
 	return nil
 }
 
