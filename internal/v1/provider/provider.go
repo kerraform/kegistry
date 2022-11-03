@@ -84,10 +84,16 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
 
-		var req CreateProviderPlatformRequest
+		var req *CreateProviderPlatformRequest
 
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			return err
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			p.logger.Error("failed to decode json", zap.Error(err))
+			return errors.New("malformed request")
+		}
+
+		if req != nil {
+			p.logger.Error("empty body")
+			return errors.New("empty body")
 		}
 
 		result, err := p.driver.Provider.CreateProviderPlatform(r.Context(), namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch)
@@ -135,7 +141,8 @@ func (p *Provider) CreateProviderVersion() http.Handler {
 
 		var req CreateProviderVersionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			return err
+			p.logger.Error("failed to decode json", zap.Error(err))
+			return errors.New("malformed request")
 		}
 		defer r.Body.Close()
 
