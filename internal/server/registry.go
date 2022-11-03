@@ -2,8 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"github.com/kerraform/kegistry/internal/grammar"
 	"github.com/kerraform/kegistry/internal/handler"
 	"github.com/kerraform/kegistry/internal/middleware"
 	"github.com/kerraform/kegistry/internal/model"
@@ -45,7 +47,7 @@ func (s *Server) registerRegistryHandler() {
 	module.Methods(http.MethodPost).Path("/{namespace}/{name}/{provider}/versions").Handler(s.v1.Module.CreateModuleVersion())
 
 	// Upload a version
-	module.Methods(http.MethodPut).Path("/{namespace}/{name}/{provider}/versions/{version}").Handler(s.v1.Module.UploadModuleVersion())
+	module.Methods(http.MethodPut).Path(fmt.Sprintf("/{namespace}/{name}/{provider}/versions/{version:%s}", grammar.Version)).Handler(s.v1.Module.UploadModuleVersion())
 
 	// Create module
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/modules#create-a-module-with-no-vcs-connection
@@ -53,11 +55,11 @@ func (s *Server) registerRegistryHandler() {
 
 	// Download source code
 	// https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
-	module.Methods(http.MethodGet).Path("/{namespace}/{name}/{provider}/{version}/download").Handler(s.v1.Module.FindSourceCode())
+	module.Methods(http.MethodGet).Path(fmt.Sprintf("/{namespace}/{name}/{provider}/{version:%s}/download", grammar.Version)).Handler(s.v1.Module.FindSourceCode())
 
 	// Download source code
 	// https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
-	module.Methods(http.MethodGet).Path("/{namespace}/{name}/{provider}/{version}/{file}").Handler(s.v1.Module.Download())
+	module.Methods(http.MethodGet).Path(fmt.Sprintf("/{namespace}/{name}/{provider}/{version:%s}/{file}", grammar.Version)).Handler(s.v1.Module.Download())
 
 	provider := registry.PathPrefix(v1ProvidersPath).Subrouter()
 	provider.Use(middleware.Enable(middleware.ProviderRegistryType, s.enableProvider))
@@ -80,29 +82,29 @@ func (s *Server) registerRegistryHandler() {
 	// Creates a provider platform binary
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
-	provider.Methods(http.MethodPut).Path("/{namespace}/{registryName}/versions/{version}/{os}/{arch}/binary").Handler(s.v1.Provider.UploadPlatformBinary())
-	provider.Methods(http.MethodGet).Path("/{namespace}/{registryName}/versions/{version}/{os}/{arch}/binary").Handler(s.v1.Provider.DownloadPlatformBinary())
+	provider.Methods(http.MethodPut).Path(fmt.Sprintf("/{namespace}/{registryName}/versions/{version:%s}/{os}/{arch}/binary", grammar.Version)).Handler(s.v1.Provider.UploadPlatformBinary())
+	provider.Methods(http.MethodGet).Path(fmt.Sprintf("/{namespace}/{registryName}/versions/{version:%s}/{os}/{arch}/binary", grammar.Version)).Handler(s.v1.Provider.DownloadPlatformBinary())
 
 	// Creates and get a provider version shasums
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
-	provider.Methods(http.MethodGet).Path("/{namespace}/{registryName}/versions/{version}/shasums").Handler(s.v1.Provider.DownloadSHASums())
-	provider.Methods(http.MethodPut).Path("/{namespace}/{registryName}/versions/{version}/shasums").Handler(s.v1.Provider.UploadSHASums())
+	provider.Methods(http.MethodGet).Path(fmt.Sprintf("/{namespace}/{registryName}/versions/{version:%s}/shasums", grammar.Version)).Handler(s.v1.Provider.DownloadSHASums())
+	provider.Methods(http.MethodPut).Path(fmt.Sprintf("/{namespace}/{registryName}/versions/{version:%s}/shasums", grammar.Version)).Handler(s.v1.Provider.UploadSHASums())
 
 	// Creates and get a provider version shasums signature
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-version
-	provider.Methods(http.MethodPut).Path("/{namespace}/{registryName}/versions/{version}/shasums-sig").Handler(s.v1.Provider.UploadSHASumsSignature())
-	provider.Methods(http.MethodGet).Path("/{namespace}/{registryName}/versions/{version}/shasums-sig").Handler(s.v1.Provider.DownloadSHASumsSignature())
+	provider.Methods(http.MethodPut).Path(fmt.Sprintf("/{namespace}/{registryName}/versions/{version:%s}/shasums-sig", grammar.Version)).Handler(s.v1.Provider.UploadSHASumsSignature())
+	provider.Methods(http.MethodGet).Path(fmt.Sprintf("/{namespace}/{registryName}/versions/{version:%s}/shasums-sig", grammar.Version)).Handler(s.v1.Provider.DownloadSHASumsSignature())
 
 	// Creates a provider platform
 	// Inspired by Terraform Cloud API:
 	// https://www.terraform.io/cloud-docs/api-docs/private-registry/provider-versions-platforms#create-a-provider-platform
-	provider.Methods(http.MethodPost).Path("/{namespace}/{registryName}/versions/{version}/platforms").Handler(s.v1.Provider.CreateProviderPlatform())
+	provider.Methods(http.MethodPost).Path(fmt.Sprintf("/{namespace}/{registryName}/versions/{version:%s}/platforms", grammar.Version)).Handler(s.v1.Provider.CreateProviderPlatform())
 
 	// Find a Provider Package
 	// https://www.terraform.io/internals/provider-registry-protocol#find-a-provider-package
-	provider.Methods(http.MethodGet).Path("/{namespace}/{registryName}/{version}/download/{os}/{arch}").Handler(s.v1.Provider.FindPackage())
+	provider.Methods(http.MethodGet).Path(fmt.Sprintf("/{namespace}/{registryName}/{version:%s}/download/{os}/{arch}", grammar.Version)).Handler(s.v1.Provider.FindPackage())
 }
 
 func (s *Server) ServiceDiscovery() http.Handler {
