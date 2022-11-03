@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
+	"github.com/kerraform/kegistry/internal/validator"
 	"go.uber.org/zap"
 )
 
@@ -116,7 +117,7 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 
 type CreateProviderVersionRequestDataAttributes struct {
 	// Version of the provider in semver (e.g. v2.0.1)
-	Version string `json:"version"`
+	Version string `json:"version" validate:"required,semver"`
 
 	// Valid gpg-key string
 	KeyID string `json:"key-id"`
@@ -144,6 +145,12 @@ func (p *Provider) CreateProviderVersion() http.Handler {
 			return errors.New("malformed request")
 		}
 		defer r.Body.Close()
+
+		if err := validator.Validate.Struct(req); err != nil {
+			p.logger.Error("failed to validate struct", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return errors.New("invalid request body")
+		}
 
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
