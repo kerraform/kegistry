@@ -40,10 +40,10 @@ func New(cfg *Config) *Provider {
 // https://www.terraform.io/cloud-docs/api-docs/private-registry/providers#request-body
 type CreateProviderRequestDataAttributes struct {
 	// Name of the provider (e.g. aws)
-	Name string `json:"name"`
+	Name string `json:"name" validate:"required"`
 
 	// Name of the namespace (a.k.a. organization)
-	Namespace string `json:"namespace"`
+	Namespace string `json:"namespace" validate:"required"`
 }
 
 func (p *Provider) CreateProvider() http.Handler {
@@ -57,6 +57,12 @@ func (p *Provider) CreateProvider() http.Handler {
 		}
 		defer r.Body.Close()
 
+		if err := validator.Validate.Struct(req); err != nil {
+			p.logger.Error("failed to validate struct", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return errors.New("invalid request body")
+		}
+
 		if err := p.driver.Provider.CreateProvider(r.Context(), req.Data.Attributes.Namespace, req.Data.Attributes.Name); err != nil {
 			return err
 		}
@@ -68,8 +74,8 @@ func (p *Provider) CreateProvider() http.Handler {
 }
 
 type CreateProviderPlatformRequestDataAttributes struct {
-	OS   string `json:"os"`
-	Arch string `json:"arch"`
+	OS   string `json:"os" validate:"required"`
+	Arch string `json:"arch" validate:"required"`
 }
 
 type CreateProviderPlatformResponseData struct {
@@ -93,6 +99,12 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 			p.logger.Error("failed to decode json", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("malformed request")
+		}
+
+		if err := validator.Validate.Struct(req); err != nil {
+			p.logger.Error("failed to validate struct", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return errors.New("invalid request body")
 		}
 
 		result, err := p.driver.Provider.CreateProviderPlatform(r.Context(), namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch)
@@ -120,7 +132,7 @@ type CreateProviderVersionRequestDataAttributes struct {
 	Version string `json:"version" validate:"required,semver"`
 
 	// Valid gpg-key string
-	KeyID string `json:"key-id"`
+	KeyID string `json:"key-id" validate:"required"`
 }
 
 type CreateProviderVersionResponseData struct {

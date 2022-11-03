@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
+	"github.com/kerraform/kegistry/internal/validator"
 	"go.uber.org/zap"
 )
 
@@ -47,8 +48,8 @@ type CreateModuleRequestData struct {
 }
 
 type CreateModuleDataAttributes struct {
-	Name     string `json:"name"`
-	Provider string `json:"provider"`
+	Name     string `json:"name" validate:"required"`
+	Provider string `json:"provider" validate:"required"`
 }
 
 func (m *Module) CreateModule() http.Handler {
@@ -62,6 +63,12 @@ func (m *Module) CreateModule() http.Handler {
 			return errors.New("malformed request")
 		}
 		defer r.Body.Close()
+
+		if err := validator.Validate.Struct(req); err != nil {
+			m.logger.Error("failed to validate struct", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return errors.New("invalid request body")
+		}
 
 		if err := m.driver.Module.CreateModule(r.Context(), namespace, req.Data.Attributes.Provider, req.Data.Attributes.Name); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -111,8 +118,13 @@ func (m *Module) CreateModuleVersion() http.Handler {
 			return errors.New("malformed request")
 		}
 
-		result, err := m.driver.Module.CreateVersion(r.Context(), namespace, provider, name, req.Data.Attributes.Version)
+		if err := validator.Validate.Struct(req); err != nil {
+			m.logger.Error("failed to validate struct", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return errors.New("invalid request body")
+		}
 
+		result, err := m.driver.Module.CreateVersion(r.Context(), namespace, provider, name, req.Data.Attributes.Version)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
