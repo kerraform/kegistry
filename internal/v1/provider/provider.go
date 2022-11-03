@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
-	model "github.com/kerraform/kegistry/internal/model/provider"
 	"go.uber.org/zap"
 )
 
@@ -37,17 +36,7 @@ func New(cfg *Config) *Provider {
 	}
 }
 
-//
 // https://www.terraform.io/cloud-docs/api-docs/private-registry/providers#request-body
-type CreateProviderRequest struct {
-	Data *CreateProviderRequestData `json:"data"`
-}
-
-type CreateProviderRequestData struct {
-	Attributes *CreateProviderRequestDataAttributes `json:"attributes"`
-	Type       DataType                             `json:"type"`
-}
-
 type CreateProviderRequestDataAttributes struct {
 	// Name of the provider (e.g. aws)
 	Name string `json:"name"`
@@ -75,22 +64,9 @@ func (p *Provider) CreateProvider() http.Handler {
 	})
 }
 
-type CreateProviderPlatformRequest struct {
-	Data *CreateProviderPlatformRequestData `json:"data"`
-}
-
-type CreateProviderPlatformRequestData struct {
-	Attributes *CreateProviderPlatformRequestDataAttributes `json:"attributes"`
-	Type       DataType                                     `json:"type"`
-}
-
 type CreateProviderPlatformRequestDataAttributes struct {
 	OS   string `json:"os"`
 	Arch string `json:"arch"`
-}
-
-type CreateProviderPlatformResponse struct {
-	Data *CreateProviderPlatformResponseData `json:"data"`
 }
 
 type CreateProviderPlatformResponseData struct {
@@ -114,21 +90,11 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 			return err
 		}
 
-		l := p.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("registryName", registryName),
-			zap.String("version", version),
-			zap.String("os", req.Data.Attributes.OS),
-			zap.String("arch", req.Data.Attributes.Arch),
-		)
-
 		result, err := p.driver.Provider.CreateProviderPlatform(r.Context(), namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch)
 		if err != nil {
 			return err
 		}
 		defer r.Body.Close()
-
-		l.Info("provisioned provider platform")
 
 		resp := &CreateProviderPlatformResponse{
 			Data: &CreateProviderPlatformResponseData{
@@ -142,16 +108,7 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 	})
 }
 
-//
 // https://www.terraform.io/cloud-docs/api-docs/private-registry/providers#request-body
-type CreateProviderVersionRequest struct {
-	Data *CreateProviderVersionRequestData `json:"data"`
-}
-
-type CreateProviderVersionRequestData struct {
-	Attributes *CreateProviderVersionRequestDataAttributes `json:"attributes"`
-	Type       DataType                                    `json:"type"`
-}
 
 type CreateProviderVersionRequestDataAttributes struct {
 	// Version of the provider in semver (e.g. v2.0.1)
@@ -159,10 +116,6 @@ type CreateProviderVersionRequestDataAttributes struct {
 
 	// Valid gpg-key string
 	KeyID string `json:"key-id"`
-}
-
-type CreateProviderVersionResponse struct {
-	Data *CreateProviderVersionResponseData `json:"data"`
 }
 
 type CreateProviderVersionResponseData struct {
@@ -186,14 +139,9 @@ func (p *Provider) CreateProviderVersion() http.Handler {
 		}
 		defer r.Body.Close()
 
-		l := p.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("registryName", registryName),
-		)
-
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				l.Error("not provider found")
+				p.logger.Error("not provider found")
 				w.WriteHeader(http.StatusBadRequest)
 				return err
 			}
@@ -204,18 +152,17 @@ func (p *Provider) CreateProviderVersion() http.Handler {
 
 		result, err := p.driver.Provider.CreateProviderVersion(r.Context(), namespace, registryName, req.Data.Attributes.Version)
 		if err != nil {
-			l.Error("failed to create provider version")
+			p.logger.Error("failed to create provider version")
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}
 
 		if err := p.driver.Provider.SaveVersionMetadata(r.Context(), namespace, registryName, req.Data.Attributes.Version, req.Data.Attributes.KeyID); err != nil {
-			l.Error("failed to save provider version metadata")
+			p.logger.Error("failed to save provider version metadata")
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}
 
-		l.Info("create provider version")
 		w.WriteHeader(http.StatusOK)
 
 		resp := &CreateProviderVersionResponse{
@@ -240,14 +187,6 @@ func (p *Provider) DownloadPlatformBinary() http.Handler {
 		os := mux.Vars(r)["os"]
 		arch := mux.Vars(r)["arch"]
 
-		l := p.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("registryName", registryName),
-			zap.String("version", version),
-			zap.String("os", os),
-			zap.String("arch", arch),
-		)
-
 		f, err := p.driver.Provider.GetPlatformBinary(r.Context(), namespace, registryName, version, os, arch)
 		if err != nil {
 			return err
@@ -259,7 +198,6 @@ func (p *Provider) DownloadPlatformBinary() http.Handler {
 			return err
 		}
 
-		l.Info("download platform binary")
 		return nil
 	})
 }
@@ -269,12 +207,6 @@ func (p *Provider) DownloadSHASums() http.Handler {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
-
-		l := p.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("registryName", registryName),
-			zap.String("version", version),
-		)
 
 		f, err := p.driver.Provider.GetSHASums(r.Context(), namespace, registryName, version)
 		if err != nil {
@@ -287,7 +219,6 @@ func (p *Provider) DownloadSHASums() http.Handler {
 			return err
 		}
 
-		l.Info("download shasums")
 		return nil
 	})
 }
@@ -297,12 +228,6 @@ func (p *Provider) DownloadSHASumsSignature() http.Handler {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
-
-		l := p.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("registryName", registryName),
-			zap.String("version", version),
-		)
 
 		f, err := p.driver.Provider.GetSHASumsSig(r.Context(), namespace, registryName, version)
 		if err != nil {
@@ -315,7 +240,6 @@ func (p *Provider) DownloadSHASumsSignature() http.Handler {
 			return err
 		}
 
-		l.Info("download shasums signature")
 		return nil
 	})
 }
@@ -328,17 +252,9 @@ func (p *Provider) FindPackage() http.Handler {
 		os := mux.Vars(r)["os"]
 		arch := mux.Vars(r)["arch"]
 
-		l := p.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("registryName", registryName),
-			zap.String("version", version),
-			zap.String("os", os),
-			zap.String("arch", arch),
-		)
-
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				l.Error("not provider found")
+				p.logger.Error("not provider found")
 				w.WriteHeader(http.StatusBadRequest)
 				return err
 			}
@@ -369,21 +285,9 @@ func (p *Provider) FindPackage() http.Handler {
 			return err
 		}
 
-		l.Info("package found")
-
 		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(pkg)
 	})
-}
-
-type ListAvailableVersionsResponse struct {
-	Versions []model.AvailableVersion `json:"versions"`
-}
-
-type AvailableVersion struct {
-	Version   string                           `json:"version"`
-	Protocols []string                         `json:"protocols"`
-	Platforms []model.AvailableVersionPlatform `json:"platforms"`
 }
 
 func (p *Provider) ListAvailableVersions() http.Handler {
@@ -413,20 +317,10 @@ func (p *Provider) UploadPlatformBinary() http.Handler {
 		os := mux.Vars(r)["os"]
 		arch := mux.Vars(r)["arch"]
 
-		l := p.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("registryName", registryName),
-			zap.String("version", version),
-			zap.String("os", os),
-			zap.String("arch", arch),
-		)
-
 		if err := p.driver.Provider.SavePlatformBinary(r.Context(), namespace, registryName, version, os, arch, r.Body); err != nil {
 			return err
 		}
 		defer r.Body.Close()
-
-		l.Info("saved platform binary")
 		return nil
 	})
 }
@@ -437,18 +331,10 @@ func (p *Provider) UploadSHASums() http.Handler {
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
 
-		l := p.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("registryName", registryName),
-			zap.String("version", version),
-		)
-
 		if err := p.driver.Provider.SaveSHASUMs(r.Context(), namespace, registryName, version, r.Body); err != nil {
 			return err
 		}
 		defer r.Body.Close()
-
-		l.Info("saved shasums")
 		return nil
 	})
 }
@@ -459,18 +345,10 @@ func (p *Provider) UploadSHASumsSignature() http.Handler {
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
 
-		l := p.logger.With(
-			zap.String("namespace", namespace),
-			zap.String("registryName", registryName),
-			zap.String("version", version),
-		)
-
 		if err := p.driver.Provider.SaveSHASUMsSig(r.Context(), namespace, registryName, version, r.Body); err != nil {
 			return err
 		}
 		defer r.Body.Close()
-
-		l.Info("saved shasums signature")
 		return nil
 	})
 }

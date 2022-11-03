@@ -6,7 +6,7 @@ COMMIT = $(shell git rev-parse HEAD)
 VERSION = unknown
 
 .PHONY: build
-run:
+build:
 	@$(GOCMD) build \
 		-ldflags '-X "github.com/kerraform/kegistry/internal/version.Version=$(VERSION)" -X "github.com/kerraform/kegistry/internal/version.Commit=$(COMMIT)"' \
 		./main.go
