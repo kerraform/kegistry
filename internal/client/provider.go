@@ -32,7 +32,7 @@ func NewProviderClient(urlStr string, c *Client) (*ProviderService, error) {
 
 func (s *ProviderService) CreateVersionPlatform(ctx context.Context, namespace, name, version, pos, arch string) (*url.URL, error) {
 	b := &provider.CreateProviderPlatformRequest{
-		Data: &provider.CreateProviderPlatformRequestData{
+		Data: &provider.Data[provider.CreateProviderPlatformRequestDataAttributes, provider.DataType]{
 			Attributes: &provider.CreateProviderPlatformRequestDataAttributes{
 				OS:   pos,
 				Arch: arch,
@@ -40,7 +40,7 @@ func (s *ProviderService) CreateVersionPlatform(ctx context.Context, namespace, 
 		},
 	}
 
-	req, err := s.client.NewPostRequest(fmt.Sprintf("%s/%s/%s/versions/%s/platforms", s.url, namespace, name, version), b)
+	req, err := s.client.NewPostRequest(fmt.Sprintf("%s%s/%s/versions/%s/platforms", s.url, namespace, name, version), b)
 	if err != nil {
 		return nil, err
 	}
