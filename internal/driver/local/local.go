@@ -5,17 +5,20 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	localRootPath = "/tmp"
-)
+type DriverConfig struct {
+	RootPath string
+	Logger   *zap.Logger
+}
 
-func NewDriver(logger *zap.Logger) *driver.Driver {
+func NewDriver(cfg *DriverConfig) *driver.Driver {
 	module := &module{
-		logger: logger,
+		rootPath: cfg.RootPath,
+		logger:   cfg.Logger,
 	}
 
 	provider := &provider{
-		logger: logger,
+		rootPath: cfg.RootPath,
+		logger:   cfg.Logger,
 	}
 
 	return &driver.Driver{

@@ -54,7 +54,7 @@ func run(args []string) error {
 		zap.String("revision", version.Commit),
 	)
 
-	logger.Info("setup backend", zap.String("backend", cfg.Backend.Type))
+	logger.Info("setup backend", zap.String("backend", cfg.Backend.Type), zap.String("rootPath", cfg.Backend.RootPath))
 
 	var d *driver.Driver
 	switch driver.DriverType(cfg.Backend.Type) {
@@ -71,7 +71,10 @@ func run(args []string) error {
 			return err
 		}
 	case driver.DriverTypeLocal:
-		d = local.NewDriver(logger)
+		d = local.NewDriver(&local.DriverConfig{
+			RootPath: cfg.Backend.RootPath,
+			Logger:   logger,
+		})
 	default:
 		return fmt.Errorf("backend type %s not supported", cfg.Backend.Type)
 	}

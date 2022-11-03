@@ -9,8 +9,9 @@ import (
 )
 
 type Backend struct {
-	S3   *BackendS3 `env:",prefix=S3_"`
-	Type string     `env:"TYPE,required"`
+	S3       *BackendS3 `env:",prefix=S3_"`
+	Type     string     `env:"TYPE,required"`
+	RootPath string     `env:"ROOT_PATH,default=/tmp"`
 }
 
 func (b *Backend) MarshalLogObject(enc zapcore.ObjectEncoder) error {

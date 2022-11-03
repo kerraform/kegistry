@@ -29,6 +29,10 @@ func (s *Server) registerRegistryHandler() {
 
 	registry := s.mux.PathPrefix(registryPath).Subrouter()
 
+	// Add GPG Key
+	// https://www.terraform.io/cloud-docs/api-docs/private-registry/gpg-keys#add-a-gpg-key
+	registry.Methods(http.MethodPost).Path("/v1/gpg-key").Handler(s.v1.AddGPGKey())
+
 	module := registry.PathPrefix(v1ModulesPath).Subrouter()
 	module.Use(middleware.Enable(middleware.ModuleRegistryType, s.enableModule))
 
@@ -99,10 +103,6 @@ func (s *Server) registerRegistryHandler() {
 	// Find a Provider Package
 	// https://www.terraform.io/internals/provider-registry-protocol#find-a-provider-package
 	provider.Methods(http.MethodGet).Path("/{namespace}/{registryName}/{version}/download/{os}/{arch}").Handler(s.v1.Provider.FindPackage())
-
-	// Add GPG Key
-	// https://www.terraform.io/cloud-docs/api-docs/private-registry/gpg-keys#add-a-gpg-key
-	provider.Methods(http.MethodPost).Path("/v1/gpg-key").Handler(s.v1.AddGPGKey())
 }
 
 func (s *Server) ServiceDiscovery() http.Handler {

@@ -74,10 +74,6 @@ func (h *Handler) AddGPGKey() http.Handler {
 		}
 		defer r.Body.Close()
 
-		l := h.logger.With(
-			zap.String("namespace", req.Data.Attributes.Namespace),
-		)
-
 		if valid := req.Valid(); !valid {
 			w.WriteHeader(http.StatusBadRequest)
 			return fmt.Errorf("invalid request")
@@ -107,7 +103,7 @@ func (h *Handler) AddGPGKey() http.Handler {
 			return fmt.Errorf("failed to read public key")
 		}
 
-		l.Info("received public key",
+		h.logger.Info("received public key",
 			zap.String("keyID", pgpKey.KeyIdString()),
 		)
 
@@ -116,8 +112,6 @@ func (h *Handler) AddGPGKey() http.Handler {
 			return err
 		}
 		defer r.Body.Close()
-
-		l.Info("saved gpg key")
 		return nil
 	})
 }
