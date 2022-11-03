@@ -108,8 +108,8 @@ func (s *Server) registerRegistryHandler() {
 func (s *Server) ServiceDiscovery() http.Handler {
 	return handler.NewHandler(s.logger, func(w http.ResponseWriter, _ *http.Request) error {
 		resp := &model.Service{
-			ModulesV1:   registryPath + v1ModulesPath,
-			ProvidersV1: registryPath + v1ProvidersPath,
+			ModulesV1:   registryPath + v1ModulesPath + "/",
+			ProvidersV1: registryPath + v1ProvidersPath + "/",
 		}
 
 		w.WriteHeader(http.StatusOK)
