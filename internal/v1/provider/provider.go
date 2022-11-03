@@ -50,7 +50,9 @@ func (p *Provider) CreateProvider() http.Handler {
 		var req CreateProviderRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			return err
+			p.logger.Error("failed to decode json", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return errors.New("malformed request")
 		}
 		defer r.Body.Close()
 
@@ -88,6 +90,7 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 			p.logger.Error("failed to decode json", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("malformed request")
 		}
 
@@ -142,6 +145,7 @@ func (p *Provider) CreateProviderVersion() http.Handler {
 		var req CreateProviderVersionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			p.logger.Error("failed to decode json", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("malformed request")
 		}
 		defer r.Body.Close()

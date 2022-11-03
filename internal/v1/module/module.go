@@ -2,6 +2,7 @@ package module
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -56,8 +57,9 @@ func (m *Module) CreateModule() http.Handler {
 
 		var req CreateModuleRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			m.logger.Error("failed to decode json", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return errors.New("malformed request")
 		}
 		defer r.Body.Close()
 
@@ -104,8 +106,9 @@ func (m *Module) CreateModuleVersion() http.Handler {
 
 		var req CreateModuleVersionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			m.logger.Error("failed to decode json", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return errors.New("malformed request")
 		}
 
 		result, err := m.driver.Module.CreateVersion(r.Context(), namespace, provider, name, req.Data.Attributes.Version)
