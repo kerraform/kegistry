@@ -107,6 +107,28 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 			return errors.New("invalid request body")
 		}
 
+		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
+			if errors.Is(err, driver.ErrProviderNotExist) {
+				p.logger.Error("not provider found")
+				w.WriteHeader(http.StatusBadRequest)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		if err := p.driver.Provider.IsProviderVersionCreated(r.Context(), namespace, registryName, version); err != nil {
+			if errors.Is(err, driver.ErrProviderVersionNotExist) {
+				p.logger.Error("not provider version found")
+				w.WriteHeader(http.StatusBadRequest)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
 		result, err := p.driver.Provider.CreateProviderPlatform(r.Context(), namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch)
 		if err != nil {
 			return err
@@ -341,6 +363,26 @@ func (p *Provider) UploadPlatformBinary() http.Handler {
 		version := mux.Vars(r)["version"]
 		os := mux.Vars(r)["os"]
 		arch := mux.Vars(r)["arch"]
+
+		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
+			if errors.Is(err, driver.ErrProviderNotExist) {
+				w.WriteHeader(http.StatusNotFound)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		if err := p.driver.Provider.IsProviderVersionCreated(r.Context(), namespace, registryName, version); err != nil {
+			if errors.Is(err, driver.ErrProviderVersionNotExist) {
+				w.WriteHeader(http.StatusNotFound)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
 
 		if err := p.driver.Provider.SavePlatformBinary(r.Context(), namespace, registryName, version, os, arch, r.Body); err != nil {
 			return err
