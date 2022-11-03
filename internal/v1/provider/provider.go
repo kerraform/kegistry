@@ -265,7 +265,7 @@ func (p *Provider) FindPackage() http.Handler {
 
 		if err := p.driver.Provider.IsProviderVersionCreated(r.Context(), namespace, registryName, version); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				l.Error("not provider version found")
+				p.logger.Error("not provider version found")
 				w.WriteHeader(http.StatusBadRequest)
 				return err
 			}

@@ -177,9 +177,6 @@ func (m *Module) FindSourceCode() http.Handler {
 			return err
 		}
 
-		l.Debug("found source code of module",
-			zap.String("url", url),
-		)
 		w.Header().Set("X-Terraform-Get", url)
 		w.WriteHeader(http.StatusNoContent)
 		return nil
