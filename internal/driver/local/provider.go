@@ -172,6 +172,25 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 	return pkg, nil
 }
 
+func (d *provider) IsGPGKeyCreated(ctx context.Context, namespace, registryName string) error {
+	keyRootPath := fmt.Sprintf("%s/%s/%s/%s", d.rootPath, driver.ProviderRootPath, namespace, driver.KeyDirname)
+	keys, err := ioutil.ReadDir(keyRootPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return driver.ErrProviderGPGKeyNotExist
+		}
+
+		return err
+	}
+
+	if len(keys) == 0 {
+		return driver.ErrProviderGPGKeyNotExist
+	}
+
+	d.logger.Debug("found gpg keys", zap.Int("count", len(keys)))
+	return nil
+}
+
 func (d *provider) IsProviderCreated(ctx context.Context, namespace, registryName string) error {
 	registryRootPath := fmt.Sprintf("%s/%s/%s/%s", d.rootPath, driver.ProviderRootPath, namespace, registryName)
 	d.logger.Debug("checking provider", zap.String("path", registryRootPath))

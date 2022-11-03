@@ -236,6 +236,10 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 	return pkg, nil
 }
 
+func (d *provider) IsGPGKeyCreated(ctx context.Context, namespace, registryName string) error {
+	return nil
+}
+
 func (d *provider) IsProviderCreated(ctx context.Context, namespace, registryName string) error {
 	return nil
 }

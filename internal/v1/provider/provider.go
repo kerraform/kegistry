@@ -384,6 +384,17 @@ func (p *Provider) UploadPlatformBinary() http.Handler {
 			return err
 		}
 
+		if err := p.driver.Provider.IsGPGKeyCreated(r.Context(), namespace, registryName); err != nil {
+			p.logger.Error("error while checking gpg key", zap.Error(err))
+			if errors.Is(err, driver.ErrProviderGPGKeyNotExist) {
+				w.WriteHeader(http.StatusNotFound)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
 		if err := p.driver.Provider.SavePlatformBinary(r.Context(), namespace, registryName, version, os, arch, r.Body); err != nil {
 			return err
 		}
@@ -398,6 +409,17 @@ func (p *Provider) UploadSHASums() http.Handler {
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
 
+		if err := p.driver.Provider.IsGPGKeyCreated(r.Context(), namespace, registryName); err != nil {
+			p.logger.Error("error while checking gpg key", zap.Error(err))
+			if errors.Is(err, driver.ErrProviderGPGKeyNotExist) {
+				w.WriteHeader(http.StatusNotFound)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
 		if err := p.driver.Provider.SaveSHASUMs(r.Context(), namespace, registryName, version, r.Body); err != nil {
 			return err
 		}
@@ -411,6 +433,17 @@ func (p *Provider) UploadSHASumsSignature() http.Handler {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
+
+		if err := p.driver.Provider.IsGPGKeyCreated(r.Context(), namespace, registryName); err != nil {
+			p.logger.Error("error while checking gpg key", zap.Error(err))
+			if errors.Is(err, driver.ErrProviderGPGKeyNotExist) {
+				w.WriteHeader(http.StatusNotFound)
+				return err
+			}
+
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
 
 		if err := p.driver.Provider.SaveSHASUMsSig(r.Context(), namespace, registryName, version, r.Body); err != nil {
 			return err

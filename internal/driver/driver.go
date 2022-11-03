@@ -16,6 +16,7 @@ var (
 
 	// Provider
 	ErrProviderBinaryNotExist  = errors.New("provider binary not exist")
+	ErrProviderGPGKeyNotExist  = errors.New("provider gpg key not exist")
 	ErrProviderNotExist        = errors.New("provider not exist")
 	ErrProviderVersionNotExist = errors.New("provider version not exist")
 
@@ -54,6 +55,7 @@ type Provider interface {
 	GetSHASums(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
 	GetSHASumsSig(ctx context.Context, namespace, registryName, version string) (io.ReadCloser, error)
 	ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]provider.AvailableVersion, error)
+	IsGPGKeyCreated(ctx context.Context, namespace, registryName string) error
 	IsProviderCreated(ctx context.Context, namespace, registryName string) error
 	IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error
 	SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error
