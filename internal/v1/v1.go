@@ -3,17 +3,26 @@ package v1
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
+	"github.com/kerraform/kegistry/internal/logging"
 	"github.com/kerraform/kegistry/internal/v1/module"
 	"github.com/kerraform/kegistry/internal/v1/provider"
+	"github.com/kerraform/kegistry/internal/validator"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"
+)
+
+type DataType string
+
+const (
+	DataTypeAddGPGKey DataType = "gpg-keys"
 )
 
 type Handler struct {
@@ -48,24 +57,6 @@ func New(cfg *HandlerConfig) *Handler {
 	}
 }
 
-type AddGPGKeyRequest struct {
-	Data *AddGPGKeyRequestData `json:"data"`
-}
-
-type AddGPGKeyRequestData struct {
-	Attributes *AddGPGKeyRequestAttributes `json:"attributes"`
-	Type       string                      `json:"type"`
-}
-
-type AddGPGKeyRequestAttributes struct {
-	Namespace  string `json:"namespace"`
-	ASCIIArmor string `json:"ascii-armor"`
-}
-
-func (req *AddGPGKeyRequest) Valid() bool {
-	return req.Data.Attributes.Namespace != "" && req.Data.Attributes.ASCIIArmor != ""
-}
-
 func (h *Handler) AddGPGKey() http.Handler {
 	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		var req AddGPGKeyRequest
@@ -74,9 +65,22 @@ func (h *Handler) AddGPGKey() http.Handler {
 		}
 		defer r.Body.Close()
 
-		if valid := req.Valid(); !valid {
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			l.Error("failed to get logger", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return errors.New("internal error")
+		}
+
+		if req.Data.Type != DataTypeAddGPGKey {
 			w.WriteHeader(http.StatusBadRequest)
-			return fmt.Errorf("invalid request")
+			return fmt.Errorf("data type is not %s", DataTypeAddGPGKey)
+		}
+
+		if err := validator.Validate.Struct(req); err != nil {
+			l.Error("failed to validate struct", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return errors.New("invalid request body")
 		}
 
 		b := bytes.NewBufferString(req.Data.Attributes.ASCIIArmor)
@@ -103,7 +107,7 @@ func (h *Handler) AddGPGKey() http.Handler {
 			return fmt.Errorf("failed to read public key")
 		}
 
-		h.logger.Info("received public key",
+		l.Info("received public key",
 			zap.String("keyID", pgpKey.KeyIdString()),
 		)
 
