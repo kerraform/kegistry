@@ -5,6 +5,6 @@ type Request[T any, K comparable] struct {
 }
 
 type Data[T any, K comparable] struct {
-	Attributes T `json:"attributes"`
-	Type       K `json:"type"`
+	Attributes *T `json:"attributes"`
+	Type       K  `json:"type"`
 }

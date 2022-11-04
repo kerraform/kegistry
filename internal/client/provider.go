@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/kerraform/kegistry/internal/v1/provider"
+	"github.com/kerraform/kegistry/internal/v1/request"
 )
 
 type ProviderService struct {
@@ -32,7 +33,7 @@ func NewProviderClient(urlStr string, c *Client) (*ProviderService, error) {
 
 func (s *ProviderService) CreateVersionPlatform(ctx context.Context, namespace, name, version, pos, arch string) (*url.URL, error) {
 	b := &provider.CreateProviderPlatformRequest{
-		Data: &provider.Data[provider.CreateProviderPlatformRequestDataAttributes, provider.DataType]{
+		Data: &request.Data[provider.CreateProviderPlatformRequestDataAttributes, provider.DataType]{
 			Attributes: &provider.CreateProviderPlatformRequestDataAttributes{
 				OS:   pos,
 				Arch: arch,
