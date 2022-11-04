@@ -23,8 +23,8 @@ type HandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
 // ServeHTTP Implements the http.Handler
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	err := h.HandleFunc(w, r)
-	if err == nil {
+	hErr := h.HandleFunc(w, r)
+	if hErr == nil {
 		return
 	}
 
@@ -34,8 +34,8 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := errors.ServeJSON(w, err); err != nil {
-		l.Error("error to response", zap.Error(err))
+	l.Error("error to response", zap.Error(hErr))
+	if err := errors.ServeJSON(w, hErr); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
