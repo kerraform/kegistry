@@ -9,7 +9,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kerraform/kegistry/internal/driver"
+	kerrors "github.com/kerraform/kegistry/internal/errors"
 	"github.com/kerraform/kegistry/internal/handler"
+	"github.com/kerraform/kegistry/internal/logging"
 	"github.com/kerraform/kegistry/internal/validator"
 	"go.uber.org/zap"
 )
@@ -56,23 +58,27 @@ func (m *Module) CreateModule() http.Handler {
 	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			return kerrors.Wrap(err)
+		}
+
 		var req CreateModuleRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			m.logger.Error("failed to decode json", zap.Error(err))
+			l.Error("failed to decode json", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("malformed request")
 		}
 		defer r.Body.Close()
 
 		if err := validator.Validate.Struct(req); err != nil {
-			m.logger.Error("failed to validate struct", zap.Error(err))
+			l.Error("failed to validate struct", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("invalid request body")
 		}
 
 		if err := m.driver.Module.CreateModule(r.Context(), namespace, req.Data.Attributes.Provider, req.Data.Attributes.Name); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		w.WriteHeader(http.StatusNoContent)
@@ -111,23 +117,27 @@ func (m *Module) CreateModuleVersion() http.Handler {
 		provider := mux.Vars(r)["provider"]
 		name := mux.Vars(r)["name"]
 
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			return kerrors.Wrap(err)
+		}
+
 		var req CreateModuleVersionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			m.logger.Error("failed to decode json", zap.Error(err))
+			l.Error("failed to decode json", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("malformed request")
 		}
 
 		if err := validator.Validate.Struct(req); err != nil {
-			m.logger.Error("failed to validate struct", zap.Error(err))
+			l.Error("failed to validate struct", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("invalid request body")
 		}
 
 		result, err := m.driver.Module.CreateVersion(r.Context(), namespace, provider, name, req.Data.Attributes.Version)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		resp := &CreateModuleVersionResponse{
@@ -138,7 +148,6 @@ func (m *Module) CreateModuleVersion() http.Handler {
 			},
 		}
 
-		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
 	})
 }
@@ -168,7 +177,6 @@ func (m *Module) Download() http.Handler {
 		}
 		defer f.Close()
 
-		w.WriteHeader(http.StatusOK)
 		return nil
 	})
 }
@@ -219,8 +227,7 @@ func (m *Module) ListAvailableVersions() http.Handler {
 
 		versions, err := m.driver.Module.ListAvailableVersions(r.Context(), namespace, provider, name)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		vs := make([]ListAvailableVersionsModelVersion, len(versions))
@@ -238,7 +245,6 @@ func (m *Module) ListAvailableVersions() http.Handler {
 			},
 		}
 
-		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
 	})
 }
@@ -251,12 +257,10 @@ func (m *Module) UploadModuleVersion() http.Handler {
 		version := mux.Vars(r)["version"]
 
 		if err := m.driver.Module.SavePackage(r.Context(), namespace, provider, name, version, r.Body); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 		defer r.Body.Close()
 
-		w.WriteHeader(http.StatusOK)
 		return nil
 	})
 }

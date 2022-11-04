@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 
+	"github.com/kerraform/kegistry/internal/errors"
 	"github.com/kerraform/kegistry/internal/logging"
 	"go.uber.org/zap"
 )
@@ -28,21 +28,16 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	e := &Error{
-		Message: err.Error(),
-	}
-
 	l, err := logging.FromCtx(r.Context())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get logger; %v", err)
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(e); err != nil {
+	if err := errors.ServeJSON(w, err); err != nil {
 		l.Error("error to response", zap.Error(err))
-		return
+		w.WriteHeader(http.StatusInternalServerError)
 	}
-	l.Error("error handling request", zap.Error(err))
 }
 
 func NewHandler(f HandlerFunc) http.Handler {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kerraform/kegistry/internal/driver"
+	kerrors "github.com/kerraform/kegistry/internal/errors"
 	"github.com/kerraform/kegistry/internal/handler"
 	"github.com/kerraform/kegistry/internal/logging"
 	"github.com/kerraform/kegistry/internal/validator"
@@ -53,30 +54,26 @@ func (p *Provider) CreateProvider() http.Handler {
 
 		l, err := logging.FromCtx(r.Context())
 		if err != nil {
-			l.Error("failed to get logger", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return errors.New("internal error")
+			return kerrors.Wrap(err)
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			l.Error("failed to decode json", zap.Error(err))
-			w.WriteHeader(http.StatusBadRequest)
-			return errors.New("malformed request")
+			return kerrors.Wrap(err, kerrors.WithBadRequest())
 		}
 		defer r.Body.Close()
 
 		if err := validator.Validate.Struct(req); err != nil {
-			l.Error("failed to validate struct", zap.Error(err))
-			w.WriteHeader(http.StatusBadRequest)
-			return errors.New("invalid request body")
+			return kerrors.Wrap(
+				err,
+				kerrors.WithBadRequest(),
+			)
 		}
 
 		if err := p.driver.Provider.CreateProvider(r.Context(), req.Data.Attributes.Namespace, req.Data.Attributes.Name); err != nil {
-			return err
+			return kerrors.Wrap(err)
 		}
-		l.Info("provisioned provider path", zap.String("name", req.Data.Attributes.Name), zap.String("namespace", req.Data.Attributes.Namespace))
 
-		w.WriteHeader(http.StatusOK)
+		l.Info("provisioned provider path", zap.String("name", req.Data.Attributes.Name), zap.String("namespace", req.Data.Attributes.Namespace))
 		return nil
 	})
 }
@@ -103,34 +100,25 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 
 		l, err := logging.FromCtx(r.Context())
 		if err != nil {
-			l.Error("failed to get logger", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return errors.New("internal error")
+			return kerrors.Wrap(err)
 		}
 
 		var req CreateProviderPlatformRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			l.Error("failed to decode json", zap.Error(err))
-			w.WriteHeader(http.StatusBadRequest)
-			return errors.New("malformed request")
+			return kerrors.Wrap(err, kerrors.WithBadRequest())
 		}
 
 		if err := validator.Validate.Struct(req); err != nil {
-			l.Error("failed to validate struct", zap.Error(err))
-			w.WriteHeader(http.StatusBadRequest)
-			return errors.New("invalid request body")
+			return kerrors.Wrap(err, kerrors.WithBadRequest())
 		}
 
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				l.Error("not provider found")
-				w.WriteHeader(http.StatusBadRequest)
-				return err
+				return kerrors.Wrap(err, kerrors.WithNotFound())
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.IsProviderVersionCreated(r.Context(), namespace, registryName, version); err != nil {
@@ -140,8 +128,7 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 				return err
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		result, err := p.driver.Provider.CreateProviderPlatform(r.Context(), namespace, registryName, version, req.Data.Attributes.OS, req.Data.Attributes.Arch)
@@ -189,50 +176,37 @@ func (p *Provider) CreateProviderVersion() http.Handler {
 
 		l, err := logging.FromCtx(r.Context())
 		if err != nil {
-			l.Error("failed to get logger", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return errors.New("internal error")
+			return kerrors.Wrap(err)
 		}
 
 		var req CreateProviderVersionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			l.Error("failed to decode json", zap.Error(err))
-			w.WriteHeader(http.StatusBadRequest)
-			return errors.New("malformed request")
+			return kerrors.Wrap(err, kerrors.WithBadRequest())
 		}
 		defer r.Body.Close()
 
 		if err := validator.Validate.Struct(req); err != nil {
-			l.Error("failed to validate struct", zap.Error(err))
-			w.WriteHeader(http.StatusBadRequest)
-			return errors.New("invalid request body")
+			return kerrors.Wrap(err, kerrors.WithBadRequest())
 		}
 
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				l.Error("not provider found")
-				w.WriteHeader(http.StatusBadRequest)
-				return err
+				return kerrors.Wrap(err, kerrors.WithNotFound())
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		result, err := p.driver.Provider.CreateProviderVersion(r.Context(), namespace, registryName, req.Data.Attributes.Version)
 		if err != nil {
 			l.Error("failed to create provider version")
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.SaveVersionMetadata(r.Context(), namespace, registryName, req.Data.Attributes.Version, req.Data.Attributes.KeyID); err != nil {
 			l.Error("failed to save provider version metadata")
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
-
-		w.WriteHeader(http.StatusOK)
 
 		resp := &CreateProviderVersionResponse{
 			Data: &CreateProviderVersionResponseData{
@@ -323,20 +297,15 @@ func (p *Provider) FindPackage() http.Handler {
 
 		l, err := logging.FromCtx(r.Context())
 		if err != nil {
-			l.Error("failed to get logger", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return errors.New("internal error")
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				l.Error("not provider found")
-				w.WriteHeader(http.StatusBadRequest)
-				return err
+				return kerrors.Wrap(err, kerrors.WithNotFound())
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.IsProviderVersionCreated(r.Context(), namespace, registryName, version); err != nil {
@@ -346,22 +315,18 @@ func (p *Provider) FindPackage() http.Handler {
 				return err
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		pkg, err := p.driver.Provider.FindPackage(r.Context(), namespace, registryName, version, os, arch)
 		if err != nil {
 			if errors.Is(err, driver.ErrProviderBinaryNotExist) {
-				w.WriteHeader(http.StatusNotFound)
-				return err
+				return kerrors.Wrap(err, kerrors.WithNotFound())
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
-		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(pkg)
 	})
 }
@@ -380,7 +345,6 @@ func (p *Provider) ListAvailableVersions() http.Handler {
 			Versions: versions,
 		}
 
-		w.WriteHeader(http.StatusOK)
 		return json.NewEncoder(w).Encode(resp)
 	})
 }
@@ -395,9 +359,7 @@ func (p *Provider) UploadPlatformBinary() http.Handler {
 
 		l, err := logging.FromCtx(r.Context())
 		if err != nil {
-			l.Error("failed to get logger", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return errors.New("internal error")
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
@@ -406,8 +368,7 @@ func (p *Provider) UploadPlatformBinary() http.Handler {
 				return err
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.IsProviderVersionCreated(r.Context(), namespace, registryName, version); err != nil {
@@ -416,19 +377,16 @@ func (p *Provider) UploadPlatformBinary() http.Handler {
 				return err
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.IsGPGKeyCreated(r.Context(), namespace, registryName); err != nil {
 			l.Error("error while checking gpg key", zap.Error(err))
 			if errors.Is(err, driver.ErrProviderGPGKeyNotExist) {
-				w.WriteHeader(http.StatusNotFound)
-				return err
+				return kerrors.Wrap(err, kerrors.WithNotFound())
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.SavePlatformBinary(r.Context(), namespace, registryName, version, os, arch, r.Body); err != nil {
@@ -447,20 +405,16 @@ func (p *Provider) UploadSHASums() http.Handler {
 
 		l, err := logging.FromCtx(r.Context())
 		if err != nil {
-			l.Error("failed to get logger", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return errors.New("internal error")
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.IsGPGKeyCreated(r.Context(), namespace, registryName); err != nil {
 			l.Error("error while checking gpg key", zap.Error(err))
 			if errors.Is(err, driver.ErrProviderGPGKeyNotExist) {
-				w.WriteHeader(http.StatusNotFound)
-				return err
+				return kerrors.Wrap(err, kerrors.WithNotFound())
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.SaveSHASUMs(r.Context(), namespace, registryName, version, r.Body); err != nil {
@@ -479,20 +433,16 @@ func (p *Provider) UploadSHASumsSignature() http.Handler {
 
 		l, err := logging.FromCtx(r.Context())
 		if err != nil {
-			l.Error("failed to get logger", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return errors.New("internal error")
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.IsGPGKeyCreated(r.Context(), namespace, registryName); err != nil {
 			l.Error("error while checking gpg key", zap.Error(err))
 			if errors.Is(err, driver.ErrProviderGPGKeyNotExist) {
-				w.WriteHeader(http.StatusNotFound)
-				return err
+				return kerrors.Wrap(err, kerrors.WithNotFound())
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		if err := p.driver.Provider.SaveSHASUMsSig(r.Context(), namespace, registryName, version, r.Body); err != nil {

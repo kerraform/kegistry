@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/kerraform/kegistry/internal/driver"
+	kerrors "github.com/kerraform/kegistry/internal/errors"
 	"github.com/kerraform/kegistry/internal/handler"
 	"github.com/kerraform/kegistry/internal/logging"
 	"github.com/kerraform/kegistry/internal/v1/module"
@@ -67,44 +68,36 @@ func (h *Handler) AddGPGKey() http.Handler {
 
 		l, err := logging.FromCtx(r.Context())
 		if err != nil {
-			l.Error("failed to get logger", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return errors.New("internal error")
+			return kerrors.Wrap(err)
 		}
 
 		if req.Data.Type != DataTypeAddGPGKey {
-			w.WriteHeader(http.StatusBadRequest)
-			return fmt.Errorf("data type is not %s", DataTypeAddGPGKey)
+			return kerrors.Wrap(fmt.Errorf("data type is not %s", DataTypeAddGPGKey), kerrors.WithBadRequest())
 		}
 
 		if err := validator.Validate.Struct(req); err != nil {
-			l.Error("failed to validate struct", zap.Error(err))
-			w.WriteHeader(http.StatusBadRequest)
-			return errors.New("invalid request body")
+			return kerrors.Wrap(err, kerrors.WithBadRequest())
 		}
 
 		b := bytes.NewBufferString(req.Data.Attributes.ASCIIArmor)
 		block, err := armor.Decode(b)
 		if err != nil {
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		if block.Type != openpgp.PublicKeyType {
-			w.WriteHeader(http.StatusBadRequest)
-			return fmt.Errorf("key is not public key")
+			return kerrors.Wrap(errors.New("key is not public key"), kerrors.WithBadRequest())
 		}
 
 		reader := packet.NewReader(block.Body)
 		pkt, err := reader.Next()
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return err
+			return kerrors.Wrap(err)
 		}
 
 		pgpKey, ok := pkt.(*packet.PublicKey)
 		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return fmt.Errorf("failed to read public key")
+			return kerrors.Wrap(errors.New("failed to read public key"), kerrors.WithBadRequest())
 		}
 
 		l.Info("received public key",
@@ -112,8 +105,7 @@ func (h *Handler) AddGPGKey() http.Handler {
 		)
 
 		if err := h.driver.Provider.SaveGPGKey(r.Context(), req.Data.Attributes.Namespace, pgpKey.KeyIdString(), []byte(req.Data.Attributes.ASCIIArmor)); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
+			return kerrors.Wrap(err)
 		}
 		defer r.Body.Close()
 		return nil
