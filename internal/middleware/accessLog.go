@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/kerraform/kegistry/internal/logging"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -49,24 +51,29 @@ func AccessLog(logger *zap.Logger) func(http.Handler) http.Handler {
 			res := &http.Response{}
 			rww := newRwWrapper(w, res)
 
+			l := logger.With(
+				flattenFields(r)...,
+			)
+
+			req := r.WithContext(context.WithValue(r.Context(), logging.Key, l))
+
 			defer func() {
-				logger.Named("accessLog").Info("access to server",
-					flattenVars(r, res)...,
+				l.Named("accessLog").Info("access to server",
+					zap.Int("statusCode", res.StatusCode),
 				)
 			}()
-			next.ServeHTTP(rww, r)
+			next.ServeHTTP(rww, req)
 		})
 	}
 }
 
-func flattenVars(r *http.Request, res *http.Response) []zapcore.Field {
+func flattenFields(r *http.Request) []zapcore.Field {
 	fs := []zapcore.Field{
 		zap.String("method", r.Method),
 		zap.String("path", r.URL.Path),
 		zap.String("userAgent", r.UserAgent()),
 		zap.String("contentLength", strconv.FormatInt(r.ContentLength, 10)),
 		zap.String("query", r.URL.Query().Encode()),
-		zap.Int("statusCode", res.StatusCode),
 	}
 	for k, v := range mux.Vars(r) {
 		fs = append(fs, zap.String(k, v))

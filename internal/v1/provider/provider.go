@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/handler"
+	"github.com/kerraform/kegistry/internal/logging"
 	"github.com/kerraform/kegistry/internal/validator"
 	"go.uber.org/zap"
 )
@@ -47,18 +48,25 @@ type CreateProviderRequestDataAttributes struct {
 }
 
 func (p *Provider) CreateProvider() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		var req CreateProviderRequest
 
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			l.Error("failed to get logger", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return errors.New("internal error")
+		}
+
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			p.logger.Error("failed to decode json", zap.Error(err))
+			l.Error("failed to decode json", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("malformed request")
 		}
 		defer r.Body.Close()
 
 		if err := validator.Validate.Struct(req); err != nil {
-			p.logger.Error("failed to validate struct", zap.Error(err))
+			l.Error("failed to validate struct", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("invalid request body")
 		}
@@ -66,7 +74,7 @@ func (p *Provider) CreateProvider() http.Handler {
 		if err := p.driver.Provider.CreateProvider(r.Context(), req.Data.Attributes.Namespace, req.Data.Attributes.Name); err != nil {
 			return err
 		}
-		p.logger.Info("provisioned provider path", zap.String("name", req.Data.Attributes.Name), zap.String("namespace", req.Data.Attributes.Namespace))
+		l.Info("provisioned provider path", zap.String("name", req.Data.Attributes.Name), zap.String("namespace", req.Data.Attributes.Namespace))
 
 		w.WriteHeader(http.StatusOK)
 		return nil
@@ -88,28 +96,35 @@ type CreateProviderPlatformResponseDataLink struct {
 }
 
 func (p *Provider) CreateProviderPlatform() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
 
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			l.Error("failed to get logger", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return errors.New("internal error")
+		}
+
 		var req CreateProviderPlatformRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			p.logger.Error("failed to decode json", zap.Error(err))
+			l.Error("failed to decode json", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("malformed request")
 		}
 
 		if err := validator.Validate.Struct(req); err != nil {
-			p.logger.Error("failed to validate struct", zap.Error(err))
+			l.Error("failed to validate struct", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("invalid request body")
 		}
 
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				p.logger.Error("not provider found")
+				l.Error("not provider found")
 				w.WriteHeader(http.StatusBadRequest)
 				return err
 			}
@@ -120,7 +135,7 @@ func (p *Provider) CreateProviderPlatform() http.Handler {
 
 		if err := p.driver.Provider.IsProviderVersionCreated(r.Context(), namespace, registryName, version); err != nil {
 			if errors.Is(err, driver.ErrProviderVersionNotExist) {
-				p.logger.Error("not provider version found")
+				l.Error("not provider version found")
 				w.WriteHeader(http.StatusBadRequest)
 				return err
 			}
@@ -168,27 +183,34 @@ type CreateProviderVersionResponseDataLink struct {
 }
 
 func (p *Provider) CreateProviderVersion() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			l.Error("failed to get logger", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return errors.New("internal error")
+		}
+
 		var req CreateProviderVersionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			p.logger.Error("failed to decode json", zap.Error(err))
+			l.Error("failed to decode json", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("malformed request")
 		}
 		defer r.Body.Close()
 
 		if err := validator.Validate.Struct(req); err != nil {
-			p.logger.Error("failed to validate struct", zap.Error(err))
+			l.Error("failed to validate struct", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return errors.New("invalid request body")
 		}
 
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				p.logger.Error("not provider found")
+				l.Error("not provider found")
 				w.WriteHeader(http.StatusBadRequest)
 				return err
 			}
@@ -199,13 +221,13 @@ func (p *Provider) CreateProviderVersion() http.Handler {
 
 		result, err := p.driver.Provider.CreateProviderVersion(r.Context(), namespace, registryName, req.Data.Attributes.Version)
 		if err != nil {
-			p.logger.Error("failed to create provider version")
+			l.Error("failed to create provider version")
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}
 
 		if err := p.driver.Provider.SaveVersionMetadata(r.Context(), namespace, registryName, req.Data.Attributes.Version, req.Data.Attributes.KeyID); err != nil {
-			p.logger.Error("failed to save provider version metadata")
+			l.Error("failed to save provider version metadata")
 			w.WriteHeader(http.StatusInternalServerError)
 			return err
 		}
@@ -227,7 +249,7 @@ func (p *Provider) CreateProviderVersion() http.Handler {
 }
 
 func (p *Provider) DownloadPlatformBinary() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
@@ -250,7 +272,7 @@ func (p *Provider) DownloadPlatformBinary() http.Handler {
 }
 
 func (p *Provider) DownloadSHASums() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
@@ -271,7 +293,7 @@ func (p *Provider) DownloadSHASums() http.Handler {
 }
 
 func (p *Provider) DownloadSHASumsSignature() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
@@ -292,16 +314,23 @@ func (p *Provider) DownloadSHASumsSignature() http.Handler {
 }
 
 func (p *Provider) FindPackage() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
 		os := mux.Vars(r)["os"]
 		arch := mux.Vars(r)["arch"]
 
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			l.Error("failed to get logger", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return errors.New("internal error")
+		}
+
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				p.logger.Error("not provider found")
+				l.Error("not provider found")
 				w.WriteHeader(http.StatusBadRequest)
 				return err
 			}
@@ -312,7 +341,7 @@ func (p *Provider) FindPackage() http.Handler {
 
 		if err := p.driver.Provider.IsProviderVersionCreated(r.Context(), namespace, registryName, version); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
-				p.logger.Error("not provider version found")
+				l.Error("not provider version found")
 				w.WriteHeader(http.StatusBadRequest)
 				return err
 			}
@@ -338,7 +367,7 @@ func (p *Provider) FindPackage() http.Handler {
 }
 
 func (p *Provider) ListAvailableVersions() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 
@@ -357,12 +386,19 @@ func (p *Provider) ListAvailableVersions() http.Handler {
 }
 
 func (p *Provider) UploadPlatformBinary() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
 		os := mux.Vars(r)["os"]
 		arch := mux.Vars(r)["arch"]
+
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			l.Error("failed to get logger", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return errors.New("internal error")
+		}
 
 		if err := p.driver.Provider.IsProviderCreated(r.Context(), namespace, registryName); err != nil {
 			if errors.Is(err, driver.ErrProviderNotExist) {
@@ -385,7 +421,7 @@ func (p *Provider) UploadPlatformBinary() http.Handler {
 		}
 
 		if err := p.driver.Provider.IsGPGKeyCreated(r.Context(), namespace, registryName); err != nil {
-			p.logger.Error("error while checking gpg key", zap.Error(err))
+			l.Error("error while checking gpg key", zap.Error(err))
 			if errors.Is(err, driver.ErrProviderGPGKeyNotExist) {
 				w.WriteHeader(http.StatusNotFound)
 				return err
@@ -404,13 +440,20 @@ func (p *Provider) UploadPlatformBinary() http.Handler {
 }
 
 func (p *Provider) UploadSHASums() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
 
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			l.Error("failed to get logger", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return errors.New("internal error")
+		}
+
 		if err := p.driver.Provider.IsGPGKeyCreated(r.Context(), namespace, registryName); err != nil {
-			p.logger.Error("error while checking gpg key", zap.Error(err))
+			l.Error("error while checking gpg key", zap.Error(err))
 			if errors.Is(err, driver.ErrProviderGPGKeyNotExist) {
 				w.WriteHeader(http.StatusNotFound)
 				return err
@@ -429,13 +472,20 @@ func (p *Provider) UploadSHASums() http.Handler {
 }
 
 func (p *Provider) UploadSHASumsSignature() http.Handler {
-	return handler.NewHandler(p.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		registryName := mux.Vars(r)["registryName"]
 		version := mux.Vars(r)["version"]
 
+		l, err := logging.FromCtx(r.Context())
+		if err != nil {
+			l.Error("failed to get logger", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return errors.New("internal error")
+		}
+
 		if err := p.driver.Provider.IsGPGKeyCreated(r.Context(), namespace, registryName); err != nil {
-			p.logger.Error("error while checking gpg key", zap.Error(err))
+			l.Error("error while checking gpg key", zap.Error(err))
 			if errors.Is(err, driver.ErrProviderGPGKeyNotExist) {
 				w.WriteHeader(http.StatusNotFound)
 				return err

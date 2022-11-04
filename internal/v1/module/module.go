@@ -53,7 +53,7 @@ type CreateModuleDataAttributes struct {
 }
 
 func (m *Module) CreateModule() http.Handler {
-	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 
 		var req CreateModuleRequest
@@ -106,7 +106,7 @@ type CreateModuleVersionDataLinks struct {
 }
 
 func (m *Module) CreateModuleVersion() http.Handler {
-	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		provider := mux.Vars(r)["provider"]
 		name := mux.Vars(r)["name"]
@@ -144,7 +144,7 @@ func (m *Module) CreateModuleVersion() http.Handler {
 }
 
 func (m *Module) Download() http.Handler {
-	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		name := mux.Vars(r)["name"]
 		provider := mux.Vars(r)["provider"]
@@ -175,7 +175,7 @@ func (m *Module) Download() http.Handler {
 
 // https://www.terraform.io/registry/api-docs#download-source-code-for-a-specific-module-version
 func (m *Module) FindSourceCode() http.Handler {
-	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		name := mux.Vars(r)["name"]
 		provider := mux.Vars(r)["provider"]
@@ -212,7 +212,7 @@ type ListAvailableVersionsModelVersion struct {
 
 // https://www.terraform.io/internals/module-registry-protocol#list-available-versions-for-a-specific-module
 func (m *Module) ListAvailableVersions() http.Handler {
-	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		name := mux.Vars(r)["name"]
 		provider := mux.Vars(r)["provider"]
@@ -244,7 +244,7 @@ func (m *Module) ListAvailableVersions() http.Handler {
 }
 
 func (m *Module) UploadModuleVersion() http.Handler {
-	return handler.NewHandler(m.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		namespace := mux.Vars(r)["namespace"]
 		provider := mux.Vars(r)["provider"]
 		name := mux.Vars(r)["name"]

@@ -67,7 +67,7 @@ func (req *AddGPGKeyRequest) Valid() bool {
 }
 
 func (h *Handler) AddGPGKey() http.Handler {
-	return handler.NewHandler(h.logger, func(w http.ResponseWriter, r *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, r *http.Request) error {
 		var req AddGPGKeyRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			return nil

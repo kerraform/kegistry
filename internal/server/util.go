@@ -15,14 +15,14 @@ func (s *Server) registerUtilHandler() {
 }
 
 func (s *Server) HealthCheck() http.Handler {
-	return handler.NewHandler(s.logger, func(w http.ResponseWriter, _ *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, _ *http.Request) error {
 		w.WriteHeader(http.StatusOK)
 		return nil
 	})
 }
 
 func (s *Server) NotFound() http.Handler {
-	return handler.NewHandler(s.logger, func(w http.ResponseWriter, _ *http.Request) error {
+	return handler.NewHandler(func(w http.ResponseWriter, _ *http.Request) error {
 		w.WriteHeader(http.StatusNotFound)
 		return errors.New("not found")
 	})

@@ -2,8 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 
+	"github.com/kerraform/kegistry/internal/logging"
 	"go.uber.org/zap"
 )
 
@@ -12,7 +15,6 @@ type Error struct {
 }
 
 type Handler struct {
-	logger     *zap.Logger
 	HandleFunc HandlerFunc
 }
 
@@ -30,16 +32,21 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Message: err.Error(),
 	}
 
-	if err := json.NewEncoder(w).Encode(e); err != nil {
-		h.logger.Error("error to response", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
+	l, err := logging.FromCtx(r.Context())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to get logger; %v", err)
+		return
 	}
-	h.logger.Error("error handling request", zap.Error(err))
+
+	if err := json.NewEncoder(w).Encode(e); err != nil {
+		l.Error("error to response", zap.Error(err))
+		return
+	}
+	l.Error("error handling request", zap.Error(err))
 }
 
-func NewHandler(logger *zap.Logger, f HandlerFunc) http.Handler {
+func NewHandler(f HandlerFunc) http.Handler {
 	return &Handler{
-		logger:     logger,
 		HandleFunc: f,
 	}
 }
