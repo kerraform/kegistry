@@ -262,40 +262,10 @@ func (d *provider) IsGPGKeyCreated(ctx context.Context, namespace, registryName 
 }
 
 func (d *provider) IsProviderCreated(ctx context.Context, namespace, registryName string) error {
-	key := fmt.Sprintf("%s/%s/%s", driver.ProviderRootPath, namespace, registryName)
-	_, err := d.s3.HeadObject(ctx, &s3.HeadObjectInput{
-		Bucket: aws.String(d.bucket),
-		Key:    aws.String(key),
-	})
-
-	if err != nil {
-		var bne *types.NotFound
-		if errors.As(err, &bne) {
-			return driver.ErrProviderGPGKeyNotExist
-		}
-
-		return err
-	}
-
 	return nil
 }
 
 func (d *provider) IsProviderVersionCreated(ctx context.Context, namespace, registryName, version string) error {
-	key := fmt.Sprintf("%s/%s/%s/versions/%s", driver.ProviderRootPath, namespace, registryName, version)
-	_, err := d.s3.HeadObject(ctx, &s3.HeadObjectInput{
-		Bucket: aws.String(d.bucket),
-		Key:    aws.String(key),
-	})
-
-	if err != nil {
-		var bne *types.NotFound
-		if errors.As(err, &bne) {
-			return driver.ErrProviderGPGKeyNotExist
-		}
-
-		return err
-	}
-
 	return nil
 }
 
