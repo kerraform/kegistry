@@ -49,6 +49,8 @@ func (d *provider) CreateProvider(ctx context.Context, namespace, registryName s
 }
 
 func (d *provider) CreateProviderPlatform(ctx context.Context, namespace, registryName, version, pos, arch string) (*driver.CreateProviderPlatformResult, error) {
+	ctx, span := d.tracer.Start(ctx, "CreateProviderPlatform")
+	defer span.End()
 	binaryPath := fmt.Sprintf("%s/%s/%s/versions/%s/%s-%s/terraform-provider-%s_%s_%s_%s.zip", driver.ProviderRootPath, namespace, registryName, version, pos, arch, registryName, version, pos, arch)
 	psc := s3.NewPresignClient(d.s3)
 	binaryUploadURL, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
@@ -65,6 +67,8 @@ func (d *provider) CreateProviderPlatform(ctx context.Context, namespace, regist
 }
 
 func (d *provider) CreateProviderVersion(ctx context.Context, namespace, registryName, version string) (*driver.CreateProviderVersionResult, error) {
+	ctx, span := d.tracer.Start(ctx, "CreateProviderVersion")
+	defer span.End()
 	versionRootPath := fmt.Sprintf("%s/%s/%s/versions/%s", driver.ProviderRootPath, namespace, registryName, version)
 	psc := s3.NewPresignClient(d.s3)
 	sha256SumKeyUploadURL, err := psc.PresignPutObject(ctx, &s3.PutObjectInput{
@@ -104,7 +108,6 @@ func (d *provider) GetSHASumsSig(ctx context.Context, namespace, registryName, v
 }
 
 func (d *provider) FindPackage(ctx context.Context, namespace, registryName, version, pos, arch string) (*model.Package, error) {
-	fmt.Println(d.tracer)
 	ctx, span := d.tracer.Start(ctx, "FindPackage")
 	defer span.End()
 
@@ -292,6 +295,8 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 }
 
 func (d *provider) IsGPGKeyCreated(ctx context.Context, namespace, registryName string) error {
+	ctx, span := d.tracer.Start(ctx, "IsGPGKeyCreated")
+	defer span.End()
 	keyPath := fmt.Sprintf("%s/%s/%s", driver.ProviderRootPath, namespace, driver.KeyDirname)
 	objs, err := d.s3.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket:    aws.String(d.bucket),
@@ -323,6 +328,8 @@ func (d *provider) IsProviderVersionCreated(ctx context.Context, namespace, regi
 }
 
 func (d *provider) ListAvailableVersions(ctx context.Context, namespace, registryName string) ([]model.AvailableVersion, error) {
+	ctx, span := d.tracer.Start(ctx, "ListAvailableVersions")
+	defer span.End()
 	prefix := fmt.Sprintf("%s/%s/%s/versions", driver.ProviderRootPath, namespace, registryName)
 	input := &s3.ListObjectsV2Input{
 		Bucket: aws.String(d.bucket),
@@ -372,6 +379,8 @@ func (d *provider) ListAvailableVersions(ctx context.Context, namespace, registr
 }
 
 func (d *provider) SaveGPGKey(ctx context.Context, namespace, keyID string, key []byte) error {
+	ctx, span := d.tracer.Start(ctx, "SaveGPGKey")
+	defer span.End()
 	keyPath := fmt.Sprintf("%s/%s/%s/%s", driver.ProviderRootPath, namespace, driver.KeyDirname, keyID)
 	uploader := manager.NewUploader(d.s3)
 
@@ -390,18 +399,23 @@ func (d *provider) SaveGPGKey(ctx context.Context, namespace, keyID string, key 
 }
 
 func (d *provider) SavePlatformBinary(ctx context.Context, namespace, registryName, version, pos, arch string, body io.Reader) error {
+	// Note: There are no "directory" system on Amazon S3
 	return ErrS3NotAllowed
 }
 
 func (d *provider) SaveSHASUMs(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
+	// Note: There are no "directory" system on Amazon S3
 	return ErrS3NotAllowed
 }
 
 func (d *provider) SaveSHASUMsSig(ctx context.Context, namespace, registryName, version string, body io.Reader) error {
+	// Note: There are no "directory" system on Amazon S3
 	return ErrS3NotAllowed
 }
 
 func (d *provider) SaveVersionMetadata(ctx context.Context, namespace, registryName, version, keyID string) error {
+	ctx, span := d.tracer.Start(ctx, "SaveVersionMetadata")
+	defer span.End()
 	filepath := fmt.Sprintf("%s/%s/%s/versions/%s/%s", driver.ProviderRootPath, namespace, registryName, version, driver.VersionMetadataFilename)
 	if err := d.IsProviderVersionCreated(ctx, namespace, registryName, version); err != nil {
 		return err
