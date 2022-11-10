@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 	"github.com/kerraform/kegistry/internal/driver"
 	model "github.com/kerraform/kegistry/internal/model/provider"
 	"go.uber.org/zap"
@@ -138,6 +139,7 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 				Bucket: aws.String(d.bucket),
 				Key:    obj.Key,
 			})
+
 			if err != nil {
 				return err
 			}
@@ -179,7 +181,13 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 			Bucket: aws.String(d.bucket),
 			Key:    aws.String(filepath),
 		})
+
 		if err != nil {
+			var ae smithy.APIError
+			if errors.As(err, &ae) {
+				return driver.ErrProviderBinaryNotExist
+			}
+
 			return err
 		}
 
@@ -195,7 +203,16 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 			Key:    aws.String(filepath),
 		})
 
-		return err
+		if err != nil {
+			var ae smithy.APIError
+			if errors.As(err, &ae) {
+				return driver.ErrProviderBinaryNotExist
+			}
+
+			return err
+		}
+
+		return nil
 	})
 
 	wg.Go(func() error {
@@ -204,6 +221,15 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 			Bucket: aws.String(d.bucket),
 			Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)),
 		})
+
+		if err != nil {
+			var ae smithy.APIError
+			if errors.As(err, &ae) {
+				return driver.ErrProviderSHA256SUMSNotExist
+			}
+
+			return err
+		}
 
 		return err
 	})
@@ -214,6 +240,15 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 			Bucket: aws.String(d.bucket),
 			Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)),
 		})
+
+		if err != nil {
+			var ae smithy.APIError
+			if errors.As(err, &ae) {
+				return driver.ErrProviderSHA256SUMSSigNotExist
+			}
+
+			return err
+		}
 
 		return err
 	})
