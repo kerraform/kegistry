@@ -8,12 +8,14 @@ import (
 	"os"
 
 	"github.com/kerraform/kegistry/internal/driver"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type module struct {
 	logger   *zap.Logger
 	rootPath string
+	tracer   trace.Tracer
 }
 
 var _ driver.Module = (*module)(nil)

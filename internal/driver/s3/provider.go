@@ -22,6 +22,7 @@ import (
 	"github.com/aws/smithy-go"
 	"github.com/kerraform/kegistry/internal/driver"
 	model "github.com/kerraform/kegistry/internal/model/provider"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -30,6 +31,7 @@ type provider struct {
 	bucket string
 	logger *zap.Logger
 	s3     *s3.Client
+	tracer trace.Tracer
 }
 
 type endpointResolver struct {
@@ -102,6 +104,9 @@ func (d *provider) GetSHASumsSig(ctx context.Context, namespace, registryName, v
 }
 
 func (d *provider) FindPackage(ctx context.Context, namespace, registryName, version, pos, arch string) (*model.Package, error) {
+	ctx, span := d.tracer.Start(ctx, "FindPackage")
+	defer span.End()
+
 	platformPath := fmt.Sprintf("%s/%s/%s/versions/%s/%s-%s", driver.ProviderRootPath, namespace, registryName, version, pos, arch)
 	filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", registryName, version, pos, arch)
 	filepath := fmt.Sprintf("%s/%s", platformPath, filename)
@@ -118,12 +123,14 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 	gpgKeys := []model.GPGPublicKey{}
 
 	wg.Go(func() error {
+		newCtx, span := d.tracer.Start(ctx, "gpgKeys")
+		defer span.End()
 		input := &s3.ListObjectsV2Input{
 			Bucket: aws.String(d.bucket),
 			Prefix: aws.String(keysRootPath),
 		}
 
-		resp, err := d.s3.ListObjectsV2(ctx, input)
+		resp, err := d.s3.ListObjectsV2(newCtx, input)
 		if err != nil {
 			return err
 		}
@@ -134,8 +141,9 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 		)
 
 		for _, obj := range resp.Contents {
+			newCtx2, span2 := d.tracer.Start(newCtx, "gpgKey")
 			b := manager.NewWriteAtBuffer([]byte{})
-			_, err := downloader.Download(ctx, b, &s3.GetObjectInput{
+			_, err := downloader.Download(newCtx2, b, &s3.GetObjectInput{
 				Bucket: aws.String(d.bucket),
 				Key:    obj.Key,
 			})
@@ -170,14 +178,17 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 				ASCIIArmor: string(b.Bytes()),
 			}
 			gpgKeys = append(gpgKeys, gpgKey)
+			span2.End()
 		}
 
 		return nil
 	})
 
 	wg.Go(func() error {
+		newCtx, span := d.tracer.Start(ctx, "sha256sum")
+		defer span.End()
 		b := manager.NewWriteAtBuffer([]byte{})
-		_, err := downloader.Download(ctx, b, &s3.GetObjectInput{
+		_, err := downloader.Download(newCtx, b, &s3.GetObjectInput{
 			Bucket: aws.String(d.bucket),
 			Key:    aws.String(filepath),
 		})
@@ -197,8 +208,10 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 	})
 
 	wg.Go(func() error {
+		newCtx, span := d.tracer.Start(ctx, "downloadURL")
+		defer span.End()
 		var err error
-		platformBinaryDownload, err = psc.PresignGetObject(ctx, &s3.GetObjectInput{
+		platformBinaryDownload, err = psc.PresignGetObject(newCtx, &s3.GetObjectInput{
 			Bucket: aws.String(d.bucket),
 			Key:    aws.String(filepath),
 		})
@@ -216,8 +229,10 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 	})
 
 	wg.Go(func() error {
+		newCtx, span := d.tracer.Start(ctx, "sha256SumsURL")
+		defer span.End()
 		var err error
-		sha256SumKeyDownload, err = psc.PresignGetObject(ctx, &s3.GetObjectInput{
+		sha256SumKeyDownload, err = psc.PresignGetObject(newCtx, &s3.GetObjectInput{
 			Bucket: aws.String(d.bucket),
 			Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS", versionRootPath, registryName, version)),
 		})
@@ -235,8 +250,10 @@ func (d *provider) FindPackage(ctx context.Context, namespace, registryName, ver
 	})
 
 	wg.Go(func() error {
+		newCtx, span := d.tracer.Start(ctx, "sha256SumSigURL")
+		defer span.End()
 		var err error
-		sha256SumSigKeyDownload, err = psc.PresignGetObject(ctx, &s3.GetObjectInput{
+		sha256SumSigKeyDownload, err = psc.PresignGetObject(newCtx, &s3.GetObjectInput{
 			Bucket: aws.String(d.bucket),
 			Key:    aws.String(fmt.Sprintf("%s/terraform-provider-%s_%s_SHA256SUMS.sig", versionRootPath, registryName, version)),
 		})

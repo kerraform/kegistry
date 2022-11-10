@@ -56,12 +56,14 @@ func NewDriver(logger *zap.Logger, opts *DriverOpts) (*driver.Driver, error) {
 	module := &module{
 		bucket: opts.Bucket,
 		logger: logger,
+		tracer: opts.Tracer,
 		s3:     s3Client,
 	}
 
 	provider := &provider{
 		bucket: opts.Bucket,
 		logger: logger,
+		tracer: opts.Tracer,
 		s3:     s3Client,
 	}
 

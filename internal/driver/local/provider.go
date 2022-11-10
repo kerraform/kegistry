@@ -18,12 +18,14 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/kerraform/kegistry/internal/driver"
 	model "github.com/kerraform/kegistry/internal/model/provider"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type provider struct {
 	logger   *zap.Logger
 	rootPath string
+	tracer   trace.Tracer
 }
 
 var _ driver.Provider = (*provider)(nil)

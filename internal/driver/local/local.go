@@ -14,13 +14,15 @@ type DriverConfig struct {
 
 func NewDriver(cfg *DriverConfig) *driver.Driver {
 	module := &module{
-		rootPath: cfg.RootPath,
 		logger:   cfg.Logger,
+		rootPath: cfg.RootPath,
+		tracer:   cfg.Tracer,
 	}
 
 	provider := &provider{
-		rootPath: cfg.RootPath,
 		logger:   cfg.Logger,
+		rootPath: cfg.RootPath,
+		tracer:   cfg.Tracer,
 	}
 
 	return &driver.Driver{
