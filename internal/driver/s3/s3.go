@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 	"github.com/kerraform/kegistry/internal/driver"
 	"go.uber.org/zap"
 )
@@ -67,4 +69,17 @@ func NewDriver(logger *zap.Logger, opts *DriverOpts) (*driver.Driver, error) {
 		Module:   module,
 		Provider: provider,
 	}, nil
+}
+
+func handleError(err error, rerr error) error {
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.(type) {
+		case *types.NotFound:
+		case *types.NoSuchKey:
+			return rerr
+		}
+	}
+
+	return err
 }

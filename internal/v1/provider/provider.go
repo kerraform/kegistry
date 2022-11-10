@@ -232,6 +232,12 @@ func (p *Provider) DownloadPlatformBinary() http.Handler {
 
 		f, err := p.driver.Provider.GetPlatformBinary(r.Context(), namespace, registryName, version, os, arch)
 		if err != nil {
+			if errors.Is(err, driver.ErrProviderNotExist) ||
+				errors.Is(err, driver.ErrProviderSHA256SUMSNotExist) ||
+				errors.Is(err, driver.ErrProviderSHA256SUMSSigNotExist) {
+				return kerrors.Wrap(err, kerrors.WithNotFound())
+			}
+
 			return err
 		}
 		defer f.Close()

@@ -15,10 +15,12 @@ var (
 	ErrModuleNotExist = errors.New("module not exist")
 
 	// Provider
-	ErrProviderBinaryNotExist  = errors.New("provider binary not exist")
-	ErrProviderGPGKeyNotExist  = errors.New("provider gpg key not exist")
-	ErrProviderNotExist        = errors.New("provider not exist")
-	ErrProviderVersionNotExist = errors.New("provider version not exist")
+	ErrProviderBinaryNotExist        = errors.New("provider binary not exist")
+	ErrProviderGPGKeyNotExist        = errors.New("provider gpg key not exist")
+	ErrProviderSHA256SUMSNotExist    = errors.New("sha256 sum key not exist")
+	ErrProviderSHA256SUMSSigNotExist = errors.New("sha256 sum sig key not exist")
+	ErrProviderNotExist              = errors.New("provider not exist")
+	ErrProviderVersionNotExist       = errors.New("provider version not exist")
 
 	PlatformBinaryRegex = regexp.MustCompile(`terraform-provider-(\w+)_([0-9]+.[0-9]+.[0-9]+)_(\w+)_(\w+).zip`)
 )
