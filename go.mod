@@ -18,6 +18,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.0
 	go.opentelemetry.io/otel v1.11.1
+	go.opentelemetry.io/otel/exporters/jaeger v1.11.1
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.11.1
 	go.opentelemetry.io/otel/sdk v1.11.1
 	go.uber.org/zap v1.23.0

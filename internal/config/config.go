@@ -39,6 +39,12 @@ type Config struct {
 type Trace struct {
 	Enable bool   `env:"ENABLE,default=false"`
 	Type   string `env:"TYPE,default=console"`
+
+	Jaeger *TraceJaeger  `env:",prefix=JAEGER_"`
+}
+
+type TraceJaeger struct {
+	Endpoint string `env:"ENDPOINT"`
 }
 
 func (cfg *Config) Address() string {
