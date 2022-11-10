@@ -32,7 +32,11 @@ These are the list of the supported features.
     * Tested S3 compatible object storage
       * [MinIO](https://min.io/)
 * Monitoring
-  * Prometheus
+  * Metrics
+    * Prometheus
+  * Trace backed by [OpenTelemetry](https://opentelemetry.io/)
+    * Console
+    * Jaeger
 
 ## Configuration
 
@@ -41,6 +45,7 @@ Theses are environment variable list that you can configure.
 | Variable  | Description | Type| Default |
 |:----|:----|:----|:---|
 | `PORT`  | Port to listen | `int` | `5000` |
+| `NAME` | Used for trace name. | `string` | `kegistry` |
 | `BACKEND_TYPE` | Storage driver to use (supports `local` and `s3`) | `string` | (required) |
 | `BACKEND_ROOT_PATH` | Root path which this registry will store the providers and the modules. Currently, it only supports if backend type is `local`. | `string` | `.` |
 | `BACKEND_S3_ACCESS_KEY` | Access key of Amazon S3 | `string` |  - (Required if `BACKEND_TYPE` is `s3`) |
@@ -50,6 +55,9 @@ Theses are environment variable list that you can configure.
 | `BACKEND_S3_USE_PATH_STYLE` | Generate URL on path based. Configure to `true` if you are using MinIO or other S3 compatible object storage which is path based instead of subdomain base. | `bool` |  `false` |
 | `ENABLE_MODULE_REGISTRY` | Enables the module registry. | `bool` | `false` |
 | `ENABLE_PROVIDER_REGISTRY` | Enables the module registry. | `bool` | `false` |
+| `TRACE_ENABLE` | Enables the Trace. | `bool` | `false` |
+| `TRACE_TYPE` | Specify the trace backend (supports `console` and `json`). | `string` | `console` |
+| `TRACE_JAEGER_ENDPOINT` | Endpoint of the Jaeger (e.g. `http://localhost:14268/api/traces`). | `string` | (required) |
 | `LOG_FORMAT` | Format of the logs (supports `json`, `console`, `color`) | `string` | `json` |
 | `LOG_LEVEL` | Level of the logs (supports `info`, `debug`, `warn`, `error`) | `string` | `info` |
 
