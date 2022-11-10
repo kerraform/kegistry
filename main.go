@@ -89,7 +89,7 @@ func run(args []string) error {
 		}
 
 		logger.Info("setup otel tracer", zap.String("trace", cfg.Trace.Type))
-		tp := trace.NewTracer(r, sexp)
+		tp = trace.NewTracer(r, sexp)
 		otel.SetTracerProvider(tp)
 	} else {
 		logger.Debug("tracing disabled")
