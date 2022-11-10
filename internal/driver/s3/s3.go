@@ -70,16 +70,3 @@ func NewDriver(logger *zap.Logger, opts *DriverOpts) (*driver.Driver, error) {
 		Provider: provider,
 	}, nil
 }
-
-func handleError(err error, rerr error) error {
-	var apiErr smithy.APIError
-	if errors.As(err, &apiErr) {
-		switch apiErr.(type) {
-		case *types.NotFound:
-		case *types.NoSuchKey:
-			return rerr
-		}
-	}
-
-	return err
-}
