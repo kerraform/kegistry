@@ -1,7 +1,6 @@
 package trace
 
 import (
-	"fmt"
 	"io"
 
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -27,7 +26,7 @@ func NewConsoleExporter(w io.Writer) (trace.SpanExporter, error) {
 func NewJaegerExporter(url string) (trace.SpanExporter, error) {
 	return jaeger.New(
 		jaeger.WithCollectorEndpoint(
-			jaeger.WithEndpoint(fmt.Sprintf("%s/api/traces", url)),
+			jaeger.WithEndpoint(url),
 		),
 	)
 }
