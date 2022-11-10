@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	otracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
-	otrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -60,7 +59,19 @@ func run(args []string) error {
 		zap.String("revision", version.Commit),
 	)
 
-	var t otrace.Tracer
+	r, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceVersionKey.String(version.Version),
+			semconv.ServiceNameKey.String(cfg.Name),
+		),
+	)
+	if err != nil {
+		logger.Error("failed to setup the otel resource", zap.Error(err))
+		return err
+	}
+
 	var tp *otracesdk.TracerProvider
 	if cfg.Trace.Enable {
 		var sexp otracesdk.SpanExporter
@@ -76,24 +87,15 @@ func run(args []string) error {
 			logger.Error("failed to setup the trace provider", zap.Error(err))
 			return err
 		}
-		r, err := resource.Merge(
-			resource.Default(),
-			resource.NewWithAttributes(
-				semconv.SchemaURL,
-				semconv.ServiceVersionKey.String(version.Version),
-				semconv.ServiceNameKey.String(cfg.Name),
-			),
-		)
-		if err != nil {
-			logger.Error("failed to setup the otel resource", zap.Error(err))
-			return err
-		}
 
 		logger.Info("setup otel tracer", zap.String("trace", cfg.Trace.Type))
 		tp := trace.NewTracer(r, sexp)
 		otel.SetTracerProvider(tp)
-		t = tp.Tracer(cfg.Trace.Name)
+	} else {
+		logger.Debug("tracing disabled")
+		tp = trace.NewTracer(r, nil)
 	}
+	t := tp.Tracer(cfg.Trace.Name)
 
 	logger.Info("setup backend", zap.String("backend", cfg.Backend.Type), zap.String("rootPath", cfg.Backend.RootPath))
 	var d *driver.Driver

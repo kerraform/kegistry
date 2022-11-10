@@ -104,6 +104,7 @@ func (d *provider) GetSHASumsSig(ctx context.Context, namespace, registryName, v
 }
 
 func (d *provider) FindPackage(ctx context.Context, namespace, registryName, version, pos, arch string) (*model.Package, error) {
+	fmt.Println(d.tracer)
 	ctx, span := d.tracer.Start(ctx, "FindPackage")
 	defer span.End()
 
