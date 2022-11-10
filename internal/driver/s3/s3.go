@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/kerraform/kegistry/internal/driver"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -22,6 +23,7 @@ type DriverOpts struct {
 	Bucket       string
 	Endpoint     string
 	SecretKey    string
+	Tracer       trace.Tracer
 	UsePathStyle bool
 }
 

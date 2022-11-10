@@ -18,9 +18,11 @@ import (
 	"github.com/kerraform/kegistry/internal/trace"
 	v1 "github.com/kerraform/kegistry/internal/v1"
 	"github.com/kerraform/kegistry/internal/version"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
-	otrace "go.opentelemetry.io/otel/sdk/trace"
+	otracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	otrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -58,8 +60,42 @@ func run(args []string) error {
 		zap.String("revision", version.Commit),
 	)
 
-	logger.Info("setup backend", zap.String("backend", cfg.Backend.Type), zap.String("rootPath", cfg.Backend.RootPath))
+	var t otrace.Tracer
+	var tp *otracesdk.TracerProvider
+	if cfg.Trace.Enable {
+		var sexp otracesdk.SpanExporter
+		switch trace.ExporterType(cfg.Trace.Type) {
+		case trace.ExporterTypeConsole:
+			sexp, err = trace.NewConsoleExporter(os.Stdout)
+		case trace.ExporterTypeJaeger:
+			sexp, err = trace.NewJaegerExporter(cfg.Trace.Jaeger.Endpoint)
+		default:
+			return fmt.Errorf("trace type %s not supported", cfg.Trace.Type)
+		}
+		if err != nil {
+			logger.Error("failed to setup the trace provider", zap.Error(err))
+			return err
+		}
+		r, err := resource.Merge(
+			resource.Default(),
+			resource.NewWithAttributes(
+				semconv.SchemaURL,
+				semconv.ServiceVersionKey.String(version.Version),
+				semconv.ServiceNameKey.String(cfg.Name),
+			),
+		)
+		if err != nil {
+			logger.Error("failed to setup the otel resource", zap.Error(err))
+			return err
+		}
 
+		logger.Info("setup otel tracer", zap.String("trace", cfg.Trace.Type))
+		tp := trace.NewTracer(r, sexp)
+		otel.SetTracerProvider(tp)
+		t = tp.Tracer(cfg.Trace.Name)
+	}
+
+	logger.Info("setup backend", zap.String("backend", cfg.Backend.Type), zap.String("rootPath", cfg.Backend.RootPath))
 	var d *driver.Driver
 	switch driver.DriverType(cfg.Backend.Type) {
 	case driver.DriverTypeS3:
@@ -68,6 +104,7 @@ func run(args []string) error {
 			Bucket:       cfg.Backend.S3.Bucket,
 			Endpoint:     cfg.Backend.S3.Endpoint,
 			SecretKey:    cfg.Backend.S3.SecretKey,
+			Tracer:       t,
 			UsePathStyle: cfg.Backend.S3.UsePathStyle,
 		})
 
@@ -76,8 +113,9 @@ func run(args []string) error {
 		}
 	case driver.DriverTypeLocal:
 		d = local.NewDriver(&local.DriverConfig{
-			RootPath: cfg.Backend.RootPath,
 			Logger:   logger,
+			Tracer:   t,
+			RootPath: cfg.Backend.RootPath,
 		})
 	default:
 		return fmt.Errorf("backend type %s not supported", cfg.Backend.Type)
@@ -92,44 +130,13 @@ func run(args []string) error {
 		Logger: logger,
 	})
 
-	var tp *otrace.TracerProvider
-	if cfg.Trace.Enable {
-		var sexp otrace.SpanExporter
-		switch trace.ExporterType(cfg.Trace.Type) {
-		case trace.ExporterTypeConsole:
-			sexp, err = trace.NewConsoleExporter(os.Stdout)
-		case trace.ExporterTypeJaeger:
-			sexp, err = trace.NewConsoleExporter(os.Stdout)
-		default:
-			return fmt.Errorf("trace type %s not supported", cfg.Trace.Type)
-		}
-		if err != nil {
-			logger.Error("failed to setup the trace provider", zap.Error(err))
-			return err
-		}
-		r, err := resource.Merge(
-			resource.Default(),
-			resource.NewWithAttributes(
-				semconv.SchemaURL,
-				semconv.ServiceVersionKey.String(version.Version),
-			),
-		)
-		if err != nil {
-			logger.Error("failed to setup the otel resource", zap.Error(err))
-			return err
-		}
-
-		logger.Info("setup otel tracer")
-		tp = trace.NewTracer(r, sexp)
-	}
-
 	svr := server.NewServer(&server.ServerConfig{
 		Driver:         d,
 		EnableModule:   cfg.EnableModule,
 		EnableProvider: cfg.EnableProvider,
 		Logger:         logger,
 		Metric:         metrics,
-		Trace:          tp,
+		Tracer:         t,
 		V1:             v1,
 	})
 
@@ -159,9 +166,11 @@ func run(args []string) error {
 		return err
 	}
 
-	if err := tp.Shutdown(newCtx); err != nil {
-		logger.Error("failed to shutdown trace provider", zap.Error(err))
-		return err
+	if tp != nil {
+		if err := tp.Shutdown(newCtx); err != nil {
+			logger.Error("failed to shutdown trace provider", zap.Error(err))
+			return err
+		}
 	}
 
 	return nil
