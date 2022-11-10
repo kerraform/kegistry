@@ -33,6 +33,12 @@ type Config struct {
 	EnableProvider bool     `env:"ENABLE_PROVIDER_REGISTRY,default=false"`
 	Log            *Log     `env:",prefix=LOG_"`
 	Port           int      `env:"PORT,default=5000"`
+	Trace          *Trace   `env:",prefix=TRACE_"`
+}
+
+type Trace struct {
+	Enable bool   `env:"ENABLE,default=false"`
+	Type   string `env:"TYPE,default=console"`
 }
 
 func (cfg *Config) Address() string {

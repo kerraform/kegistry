@@ -9,6 +9,7 @@ import (
 	"github.com/kerraform/kegistry/internal/driver"
 	"github.com/kerraform/kegistry/internal/metric"
 	v1 "github.com/kerraform/kegistry/internal/v1"
+	otrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -21,6 +22,7 @@ type Server struct {
 	logger         *zap.Logger
 	metric         *metric.RegistryMetrics
 	mux            *mux.Router
+	trace          *otrace.TracerProvider
 	server         *http.Server
 
 	v1 *v1.Handler
@@ -32,6 +34,7 @@ type ServerConfig struct {
 	EnableProvider bool
 	Logger         *zap.Logger
 	Metric         *metric.RegistryMetrics
+	Trace          *otrace.TracerProvider
 	V1             *v1.Handler
 }
 
@@ -42,6 +45,7 @@ func NewServer(cfg *ServerConfig) *Server {
 		enableProvider: cfg.EnableProvider,
 		logger:         cfg.Logger,
 		metric:         cfg.Metric,
+		trace:          cfg.Trace,
 		mux:            mux.NewRouter(),
 		v1:             cfg.V1,
 	}

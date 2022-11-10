@@ -15,8 +15,12 @@ import (
 	"github.com/kerraform/kegistry/internal/logging"
 	"github.com/kerraform/kegistry/internal/metric"
 	"github.com/kerraform/kegistry/internal/server"
+	"github.com/kerraform/kegistry/internal/trace"
 	v1 "github.com/kerraform/kegistry/internal/v1"
 	"github.com/kerraform/kegistry/internal/version"
+	"go.opentelemetry.io/otel/sdk/resource"
+	otrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -88,12 +92,44 @@ func run(args []string) error {
 		Logger: logger,
 	})
 
+	var tp *otrace.TracerProvider
+	if cfg.Trace.Enable {
+		var sexp otrace.SpanExporter
+		switch trace.ExporterType(cfg.Trace.Type) {
+		case trace.ExporterTypeConsole:
+			sexp, err = trace.NewConsoleExporter(os.Stdout)
+		case trace.ExporterTypeJaeger:
+			sexp, err = trace.NewConsoleExporter(os.Stdout)
+		default:
+			return fmt.Errorf("trace type %s not supported", cfg.Trace.Type)
+		}
+		if err != nil {
+			logger.Error("failed to setup the trace provider", zap.Error(err))
+			return err
+		}
+		r, err := resource.Merge(
+			resource.Default(),
+			resource.NewWithAttributes(
+				semconv.SchemaURL,
+				semconv.ServiceVersionKey.String(version.Version),
+			),
+		)
+		if err != nil {
+			logger.Error("failed to setup the otel resource", zap.Error(err))
+			return err
+		}
+
+		logger.Info("setup otel tracer")
+		tp = trace.NewTracer(r, sexp)
+	}
+
 	svr := server.NewServer(&server.ServerConfig{
 		Driver:         d,
 		EnableModule:   cfg.EnableModule,
 		EnableProvider: cfg.EnableProvider,
 		Logger:         logger,
 		Metric:         metrics,
+		Trace:          tp,
 		V1:             v1,
 	})
 
@@ -113,10 +149,18 @@ func run(args []string) error {
 	case v := <-sigCh:
 		logger.Info("received signal %d", zap.String("signal", v.String()))
 	case <-ctx.Done():
+
 	}
 
-	if err := svr.Shutdown(ctx); err != nil {
+	// Context for shutdown
+	newCtx := context.Background()
+	if err := svr.Shutdown(newCtx); err != nil {
 		logger.Error("failed to graceful shutdown server", zap.Error(err))
+		return err
+	}
+
+	if err := tp.Shutdown(newCtx); err != nil {
+		logger.Error("failed to shutdown trace provider", zap.Error(err))
 		return err
 	}
 

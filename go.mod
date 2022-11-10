@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.12.23
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.37
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.1
+	github.com/aws/smithy-go v1.13.4
 	github.com/go-delve/delve v1.9.0
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/gorilla/mux v1.8.0
@@ -16,6 +17,9 @@ require (
 	github.com/sethvargo/go-envconfig v0.8.2
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.0
+	go.opentelemetry.io/otel v1.11.1
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.11.1
+	go.opentelemetry.io/otel/sdk v1.11.1
 	go.uber.org/zap v1.23.0
 	golang.org/x/crypto v0.1.0
 	golang.org/x/sync v0.1.0
@@ -35,7 +39,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.25 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.17.1 // indirect
-	github.com/aws/smithy-go v1.13.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cilium/ebpf v0.7.0 // indirect
@@ -45,6 +48,8 @@ require (
 	github.com/derekparker/trie v0.0.0-20200317170641-1fdf38b7b0e9 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/go-delve/liner v1.2.3-0.20220127212407-d32d89dd2a5d // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -73,6 +78,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
+	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.starlark.net v0.0.0-20200821142938-949cc6f4b097 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
