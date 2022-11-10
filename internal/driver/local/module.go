@@ -8,17 +8,21 @@ import (
 	"os"
 
 	"github.com/kerraform/kegistry/internal/driver"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type module struct {
 	logger   *zap.Logger
 	rootPath string
+	tracer   trace.Tracer
 }
 
 var _ driver.Module = (*module)(nil)
 
 func (d *module) CreateModule(ctx context.Context, namespace, provider, name string) error {
+	_, span := d.tracer.Start(ctx, "CreateModule")
+	defer span.End()
 	moduleRootPath := fmt.Sprintf("%s/modules/%s/%s/%s", d.rootPath, namespace, provider, name)
 	if err := os.MkdirAll(moduleRootPath, 0700); err != nil {
 		return err
@@ -28,6 +32,8 @@ func (d *module) CreateModule(ctx context.Context, namespace, provider, name str
 }
 
 func (d *module) CreateVersion(ctx context.Context, namespace, provider, name, version string) (*driver.CreateModuleVersionResult, error) {
+	_, span := d.tracer.Start(ctx, "CreateVersion")
+	defer span.End()
 	versionRootPath := fmt.Sprintf("%s/modules/%s/%s/%s/versions/%s", d.rootPath, namespace, provider, name, version)
 	if err := os.MkdirAll(versionRootPath, 0700); err != nil {
 		return nil, err
@@ -40,15 +46,21 @@ func (d *module) CreateVersion(ctx context.Context, namespace, provider, name, v
 }
 
 func (d *module) GetDownloadURL(ctx context.Context, namespace, provider, name, version string) (string, error) {
+	_, span := d.tracer.Start(ctx, "GetDownloadURL")
+	defer span.End()
 	return fmt.Sprintf("/registry/v1/modules/%s/%s/%s/%s/terraform-%s-%s-%v.tar.gz", namespace, provider, name, version, provider, name, version), nil
 }
 
 func (d *module) GetModule(ctx context.Context, namespace, provider, name, version string) (*os.File, error) {
+	_, span := d.tracer.Start(ctx, "GetModule")
+	defer span.End()
 	packagePath := fmt.Sprintf("%s/modules/%s/%s/%s/versions/%s/terraform-%s-%s-%s.tar.gz", d.rootPath, namespace, provider, name, version, provider, name, version)
 	return os.Open(packagePath)
 }
 
 func (d *module) ListAvailableVersions(ctx context.Context, namespace, provider, name string) ([]string, error) {
+	_, span := d.tracer.Start(ctx, "ListAvailableVersions")
+	defer span.End()
 	modulePath := fmt.Sprintf("%s/%s/%s/%s/%s/versions", d.rootPath, driver.ModuleRootPath, namespace, provider, name)
 	fs, err := ioutil.ReadDir(modulePath)
 	if err != nil {
@@ -68,6 +80,8 @@ func (d *module) ListAvailableVersions(ctx context.Context, namespace, provider,
 }
 
 func (d *module) SavePackage(ctx context.Context, namespace, provider, name, version string, b io.Reader) error {
+	_, span := d.tracer.Start(ctx, "SavePackage")
+	defer span.End()
 	pkgPath := fmt.Sprintf("%s/modules/%s/%s/%s/versions/%s/terraform-%s-%s-%s.tar.gz", d.rootPath, namespace, provider, name, version, provider, name, version)
 	f, err := os.Create(pkgPath)
 	if err != nil {

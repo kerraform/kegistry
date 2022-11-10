@@ -32,7 +32,21 @@ type Config struct {
 	EnableModule   bool     `env:"ENABLE_MODULE_REGISTRY,default=false"`
 	EnableProvider bool     `env:"ENABLE_PROVIDER_REGISTRY,default=false"`
 	Log            *Log     `env:",prefix=LOG_"`
+	Name           string   `env:"NAME,default=kegistry"`
 	Port           int      `env:"PORT,default=5000"`
+	Trace          *Trace   `env:",prefix=TRACE_"`
+}
+
+type Trace struct {
+	Enable bool   `env:"ENABLE,default=false"`
+	Name   string `env:"NAME,default=kegistry"`
+	Type   string `env:"TYPE,default=console"`
+
+	Jaeger *TraceJaeger `env:",prefix=JAEGER_"`
+}
+
+type TraceJaeger struct {
+	Endpoint string `env:"ENDPOINT"`
 }
 
 func (cfg *Config) Address() string {

@@ -9,9 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/smithy-go"
 	"github.com/kerraform/kegistry/internal/driver"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -24,6 +23,7 @@ type DriverOpts struct {
 	Bucket       string
 	Endpoint     string
 	SecretKey    string
+	Tracer       trace.Tracer
 	UsePathStyle bool
 }
 
@@ -56,12 +56,14 @@ func NewDriver(logger *zap.Logger, opts *DriverOpts) (*driver.Driver, error) {
 	module := &module{
 		bucket: opts.Bucket,
 		logger: logger,
+		tracer: opts.Tracer,
 		s3:     s3Client,
 	}
 
 	provider := &provider{
 		bucket: opts.Bucket,
 		logger: logger,
+		tracer: opts.Tracer,
 		s3:     s3Client,
 	}
 
